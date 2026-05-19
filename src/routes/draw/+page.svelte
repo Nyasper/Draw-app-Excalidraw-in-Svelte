@@ -110,7 +110,7 @@
 </script>
 
 <svelte:head>
-	<title>{title} — Svelte Excalidraw App</title>
+	<title>{title || ''} — Svelte Excalidraw</title>
 </svelte:head>
 
 <div class="canvas-page">

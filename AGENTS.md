@@ -74,14 +74,14 @@ src/
 
 ## Data model
 
-| Table | Columns |
-|-------|---------|
-| `user` | `id` (text PK), `name`, `email` (unique), `email_verified`, `image`, `created_at`, `updated_at` |
-| `session` | `id` (text PK), `user_id` (FK), `token` (unique), `expires_at`, `ip_address`, `user_agent` |
-| `account` | `id` (text PK), `user_id` (FK), `provider_id`, `account_id`, access/refresh tokens |
-| `verification` | `id` (text PK), `identifier`, `value`, `expires_at` |
-| `folder` | `id` (serial PK), `user_id` (FK), `parent_folder_id` (self-ref FK nullable), `name`, `created_at`, `updated_at` |
-| `drawing` | `id` (serial PK), `user_id` (FK nullable), `folder_id` (FK nullable), `title`, `elements` (jsonb), `app_state` (jsonb), `files` (jsonb), `created_at`, `updated_at` |
+| Table          | Columns                                                                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`         | `id` (text PK), `name`, `email` (unique), `email_verified`, `image`, `created_at`, `updated_at`                                                                     |
+| `session`      | `id` (text PK), `user_id` (FK), `token` (unique), `expires_at`, `ip_address`, `user_agent`                                                                          |
+| `account`      | `id` (text PK), `user_id` (FK), `provider_id`, `account_id`, access/refresh tokens                                                                                  |
+| `verification` | `id` (text PK), `identifier`, `value`, `expires_at`                                                                                                                 |
+| `folder`       | `id` (serial PK), `user_id` (FK), `parent_folder_id` (self-ref FK nullable), `name`, `created_at`, `updated_at`                                                     |
+| `drawing`      | `id` (serial PK), `user_id` (FK nullable), `folder_id` (FK nullable), `title`, `elements` (jsonb), `app_state` (jsonb), `files` (jsonb), `created_at`, `updated_at` |
 
 ## Key design decisions
 
@@ -110,6 +110,5 @@ src/
 
 ## Gotchas
 
-- **This file (`AGENTS.md`) is in `.gitignore`** and will not be committed.
 - **`db/index.ts` uses `process.env`** instead of `$env/dynamic/private` for compatibility with the Better Auth CLI (jiti).
 - **All packages are in `devDependencies`** — there are no production `dependencies`.

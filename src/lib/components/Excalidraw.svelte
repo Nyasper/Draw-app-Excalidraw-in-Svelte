@@ -11,8 +11,7 @@
 	import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 
 	interface Props {
-		initialData?: ExcalidrawInitialDataState | null;
-		theme?: 'dark' | 'light';
+		initialData: ExcalidrawInitialDataState | null;
 		onChange?: (
 			elements: readonly ExcalidrawElement[],
 			appState: AppState,
@@ -23,7 +22,6 @@
 
 	let {
 		initialData = null,
-		theme = 'dark',
 		onChange,
 		// eslint-disable-next-line no-useless-assignment
 		excalidrawAPI = $bindable(null)
@@ -46,7 +44,7 @@
 
 			const props: Record<string, unknown> = {
 				excalidrawAPI: (api: ExcalidrawImperativeAPI) => (excalidrawAPI = api),
-				theme
+				theme: 'dark'
 			};
 
 			if (initialData) props.initialData = initialData;
