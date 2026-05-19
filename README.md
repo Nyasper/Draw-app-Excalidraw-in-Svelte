@@ -34,20 +34,20 @@ El resultado: un clon funcional de Excalidraw con autenticación, persistencia e
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Svelte 5 (runes mode) |
-| Full-stack framework | SvelteKit |
-| Backend | SvelteKit server actions + load functions |
-| Auth | Better Auth (email/password + GitHub OAuth) |
-| ORM | Drizzle ORM |
-| Database | PostgreSQL 18 |
-| DB Runtime | Docker Compose (local development) |
-| React component | `@excalidraw/excalidraw` |
-| React bridge | `react` + `react-dom` (initialized inside `$effect()`) |
-| Language | TypeScript (strict mode) |
-| Package manager | Bun |
-| Linting/Formatting | ESLint + Prettier |
+| Layer                | Technology                                             |
+| -------------------- | ------------------------------------------------------ |
+| Frontend             | Svelte 5 (runes mode)                                  |
+| Full-stack framework | SvelteKit                                              |
+| Backend              | SvelteKit server actions + load functions              |
+| Auth                 | Better Auth (email/password + GitHub OAuth)            |
+| ORM                  | Drizzle ORM                                            |
+| Database             | PostgreSQL 18                                          |
+| DB Runtime           | Docker Compose (local development)                     |
+| React component      | `@excalidraw/excalidraw`                               |
+| React bridge         | `react` + `react-dom` (initialized inside `$effect()`) |
+| Language             | TypeScript (strict mode)                               |
+| Package manager      | Bun                                                    |
+| Linting/Formatting   | ESLint + Prettier                                      |
 
 ## Architecture
 
@@ -91,13 +91,13 @@ cp .env.example .env
 
 Fill in the required values in `.env`:
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `ORIGIN` | Yes | App URL (e.g. `http://localhost:5173`) |
-| `BETTER_AUTH_SECRET` | Yes | Random string for session signing |
-| `GITHUB_CLIENT_ID` | No | GitHub OAuth client ID |
-| `GITHUB_CLIENT_SECRET` | No | GitHub OAuth client secret |
+| Variable               | Required | Description                            |
+| ---------------------- | -------- | -------------------------------------- |
+| `DATABASE_URL`         | Yes      | PostgreSQL connection string           |
+| `ORIGIN`               | Yes      | App URL (e.g. `http://localhost:5173`) |
+| `BETTER_AUTH_SECRET`   | Yes      | Random string for session signing      |
+| `GITHUB_CLIENT_ID`     | No       | GitHub OAuth client ID                 |
+| `GITHUB_CLIENT_SECRET` | No       | GitHub OAuth client secret             |
 
 ### 3. Start the database
 
@@ -133,20 +133,20 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## Available Scripts
 
-| Command | Description |
-|---|---|
-| `bun run dev` | Start Vite dev server (port 5173) |
-| `bun run build` | Production build |
-| `bun run preview` | Preview production build |
-| `bun run check` | Type-check (`svelte-kit sync` + `svelte-check`) |
-| `bun run lint` | Lint + format check |
-| `bun run format` | Auto-format with Prettier |
-| `bun run db:start` | Start PostgreSQL via Docker Compose |
-| `bun run db:push` | Push Drizzle schema directly to DB |
-| `bun run db:generate` | Generate Drizzle migration files |
-| `bun run db:migrate` | Apply Drizzle migrations |
-| `bun run db:studio` | Open Drizzle Studio |
-| `bun run auth:schema` | Generate Better Auth schema tables |
+| Command               | Description                                     |
+| --------------------- | ----------------------------------------------- |
+| `bun run dev`         | Start Vite dev server (port 5173)               |
+| `bun run build`       | Production build                                |
+| `bun run preview`     | Preview production build                        |
+| `bun run check`       | Type-check (`svelte-kit sync` + `svelte-check`) |
+| `bun run lint`        | Lint + format check                             |
+| `bun run format`      | Auto-format with Prettier                       |
+| `bun run db:start`    | Start PostgreSQL via Docker Compose             |
+| `bun run db:push`     | Push Drizzle schema directly to DB              |
+| `bun run db:generate` | Generate Drizzle migration files                |
+| `bun run db:migrate`  | Apply Drizzle migrations                        |
+| `bun run db:studio`   | Open Drizzle Studio                             |
+| `bun run auth:schema` | Generate Better Auth schema tables              |
 
 ## How the React ↔ Svelte Bridge Works
 

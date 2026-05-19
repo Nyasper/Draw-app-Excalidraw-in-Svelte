@@ -4,6 +4,6 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 	define: {
-		"process.env.IS_PREACT": JSON.stringify("true"),
+		'process.env.IS_PREACT': JSON.stringify('true')
 	}
 });

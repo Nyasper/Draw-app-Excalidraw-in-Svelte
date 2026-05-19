@@ -1,103 +1,101 @@
 <script lang="ts">
-  import type { Attachment } from "svelte/attachments";
-  import { createElement } from "react";
-  import { createRoot } from "react-dom/client";
-  import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+	import type { Attachment } from 'svelte/attachments';
+	import { createElement } from 'react';
+	import { createRoot } from 'react-dom/client';
+	import type {
+		ExcalidrawImperativeAPI,
+		AppState,
+		BinaryFiles,
+		ExcalidrawInitialDataState
+	} from '@excalidraw/excalidraw/types';
+	import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 
-  let loading = $state(true);
-  let excalidrawAPI: ExcalidrawImperativeAPI | null = $state(null);
+	interface Props {
+		initialData?: ExcalidrawInitialDataState | null;
+		theme?: 'dark' | 'light';
+		onChange?: (
+			elements: readonly ExcalidrawElement[],
+			appState: AppState,
+			files: BinaryFiles
+		) => void;
+		excalidrawAPI?: ExcalidrawImperativeAPI | null;
+	}
 
-  const excalidraw: Attachment<HTMLDivElement> = (container) => {
-    if (!container.nodeName || container.nodeName !== "DIV") return;
+	let {
+		initialData = null,
+		theme = 'dark',
+		onChange,
+		// eslint-disable-next-line no-useless-assignment
+		excalidrawAPI = $bindable(null)
+	}: Props = $props();
 
-    const root = createRoot(container);
-    initExcalidraw();
+	let loading = $state(true);
 
-    async function initExcalidraw() {
-      const [{ Excalidraw, WelcomeScreen }] = await Promise.all([
-        import("@excalidraw/excalidraw"),
-        import("@excalidraw/excalidraw/index.css"),
-      ]);
-      loading = false;
+	const excalidraw: Attachment<HTMLDivElement> = (container) => {
+		if (!container.nodeName || container.nodeName !== 'DIV') return;
 
-      root.render(
-        createElement(
-          Excalidraw,
-          {
-            excalidrawAPI: (api) => (excalidrawAPI = api),
-            theme: "dark",
-            initialData: loadInitialData(),
-          },
-          createElement(WelcomeScreen),
-        ),
-      );
-    }
+		const root = createRoot(container);
+		initExcalidraw();
 
-    return () => {
-      saveSnapshot();
-      root.unmount();
-    };
-  };
+		async function initExcalidraw() {
+			const [{ Excalidraw, WelcomeScreen }] = await Promise.all([
+				import('@excalidraw/excalidraw'),
+				import('@excalidraw/excalidraw/index.css')
+			]);
+			loading = false;
 
-  function loadInitialData() {
-    const saved = localStorage.getItem("excalidraw-snapshot");
-    let initialData = null;
+			const props: Record<string, unknown> = {
+				excalidrawAPI: (api: ExcalidrawImperativeAPI) => (excalidrawAPI = api),
+				theme
+			};
 
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      initialData = {
-        ...parsed,
-        appState: {
-          ...parsed.appState,
-          collaborators: new Map(), // <-- siempre Map vacío al restaurar
-        },
-      };
-    }
-    return initialData;
-  }
+			if (initialData) props.initialData = initialData;
+			if (onChange) {
+				props.onChange = (
+					elements: readonly ExcalidrawElement[],
+					appState: AppState,
+					files: BinaryFiles
+				) => {
+					onChange(elements, appState, files);
+				};
+			}
 
-  function saveSnapshot() {
-    if (!excalidrawAPI) return;
+			root.render(createElement(Excalidraw, props, createElement(WelcomeScreen)));
+		}
 
-    const elements = excalidrawAPI.getSceneElements();
-    const appState = excalidrawAPI.getAppState();
-    const files = excalidrawAPI.getFiles();
-    const scrollToContent = excalidrawAPI.scrollToContent();
-
-    localStorage.setItem(
-      "excalidraw-snapshot",
-      JSON.stringify({ elements, appState, files, scrollToContent }),
-    );
-  }
+		return () => {
+			root.unmount();
+		};
+	};
 </script>
 
-<h1>Testing React Inside Svelte</h1>
-
 {#if loading}
-  <div class="loading-container">
-    <p>Loading...</p>
-  </div>
-{:else}{/if}
+	<div class="loading-container">
+		<p>Loading...</p>
+	</div>
+{/if}
 
 <div {@attach excalidraw} class="root"></div>
-<button onclick={saveSnapshot} disabled={!excalidrawAPI}>Save Snapshot</button>
 
 <style>
-  .root {
-    height: 100svh;
-  }
+	.root {
+		height: 100svh;
+	}
 
-  .loading-container {
-    position: absolute;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: black;
-    z-index: 10000;
+	.loading-container {
+		position: absolute;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		background-color: black;
+		z-index: 10000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 
-    p {
-      font-size: 3em;
-      color: white;
-    }
-  }
+		p {
+			font-size: 3em;
+			color: white;
+		}
+	}
 </style>
