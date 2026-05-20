@@ -16,8 +16,14 @@ export const auth = betterAuth({
 		sendResetPassword: async ({ user, url }) => {
 			await sendEmail({
 				to: user.email,
-				subject: 'Reset your password',
-				html: `<p>Click the link to reset your password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour.</p>`
+				subject: 'Reset your password — Excalidraw App',
+				html: emailTemplate({
+					title: 'Reset your password',
+					body: `<p>You requested a password reset for your Excalidraw App account.</p>
+					<p>Click the button below to set a new password. This link expires in 1 hour.</p>`,
+					buttonText: 'Reset password',
+					buttonUrl: url
+				})
 			});
 		},
 		resetPasswordTokenExpiresIn: 3600
@@ -26,8 +32,13 @@ export const auth = betterAuth({
 		sendVerificationEmail: async ({ user, url }) => {
 			await sendEmail({
 				to: user.email,
-				subject: 'Verify your email address',
-				html: `<p>Welcome to Excalidraw App!</p><p>Click the link to verify your email:</p><p><a href="${url}">${url}</a></p>`
+				subject: 'Verify your email — Excalidraw App',
+				html: emailTemplate({
+					title: 'Welcome to Excalidraw App!',
+					body: `<p>Thanks for creating an account. Please verify your email address to get started.</p>`,
+					buttonText: 'Verify email',
+					buttonUrl: url
+				})
 			});
 		}
 	},
@@ -39,3 +50,47 @@ export const auth = betterAuth({
 	},
 	plugins: [sveltekitCookies(getRequestEvent)]
 });
+
+function emailTemplate({
+	title,
+	body,
+	buttonText,
+	buttonUrl
+}: {
+	title: string;
+	body: string;
+	buttonText: string;
+	buttonUrl: string;
+}) {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#1e1e1e;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#1e1e1e;padding:40px 0">
+  <tr>
+    <td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#252525;border-radius:8px;overflow:hidden;border:1px solid #3a3a3a">
+        <tr>
+          <td style="padding:32px 32px 0">
+            <p style="margin:0 0 24px;font-size:16px;font-weight:700;color:#d4d4d4">Excalidraw App</p>
+            <h1 style="margin:0 0 16px;font-size:20px;color:#d4d4d4;font-weight:600">${title}</h1>
+            <div style="font-size:15px;color:#8b8b8b;line-height:1.6">${body}</div>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:24px 32px 8px">
+            <a href="${buttonUrl}" style="display:inline-block;background-color:#6965db;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:500">${buttonText}</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 32px">
+            <p style="margin:0;font-size:13px;color:#5a5a5a;text-align:center">If you didn't request this, you can safely ignore this email.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
+}

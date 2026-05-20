@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { APIError } from 'better-auth/api';
+import { env } from '$env/dynamic/private';
 
 export const load: PageServerLoad = (event) => {
 	if (event.locals.user) return redirect(302, '/');
@@ -19,7 +20,7 @@ export const actions: Actions = {
 			await auth.api.requestPasswordReset({
 				body: {
 					email,
-					redirectTo: `${process.env.ORIGIN || 'http://localhost:5173'}/reset-password`
+					redirectTo: `${env.ORIGIN || `http://localhost:${env.PORT || 5173}`}/reset-password`
 				}
 			});
 		} catch (error) {

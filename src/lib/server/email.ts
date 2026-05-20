@@ -15,10 +15,14 @@ interface SendEmailParams {
 	html: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<SendEmailResponse> {
+export async function sendEmail({
+	to,
+	subject,
+	html
+}: SendEmailParams): Promise<SendEmailResponse> {
 	const { data, error } = await resend.emails.send(
 		{
-			from: 'Excalidraw App <onboarding@resend.dev>',
+			from: `Excalidraw App <noreply@${env.MY_DOMAIN}>`,
 			to: [to],
 			subject,
 			html

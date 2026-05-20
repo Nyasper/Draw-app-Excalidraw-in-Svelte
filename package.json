@@ -4,7 +4,6 @@
 	"description": "A Svelte project using the React component 'Excalidraw' but within Svelte",
 	"version": "0.0.1",
 	"author": "Nyasper",
-	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",

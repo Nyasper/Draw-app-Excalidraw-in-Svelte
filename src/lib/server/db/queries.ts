@@ -1,4 +1,4 @@
-import { eq, asc, and } from 'drizzle-orm';
+import { eq, asc, and, count } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { folder, drawing } from '$lib/server/db/schema';
 
@@ -63,4 +63,14 @@ export async function renameFolder(id: number, name: string) {
 
 export async function deleteFolder(id: number) {
 	await db.delete(folder).where(eq(folder.id, id));
+}
+
+export async function countUserDrawings(userId: string) {
+	const [row] = await db.select({ count: count() }).from(drawing).where(eq(drawing.userId, userId));
+	return row?.count ?? 0;
+}
+
+export async function countUserFolders(userId: string) {
+	const [row] = await db.select({ count: count() }).from(folder).where(eq(folder.userId, userId));
+	return row?.count ?? 0;
 }

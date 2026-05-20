@@ -5,12 +5,13 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import Nav from '$lib/components/Nav.svelte';
-	import type { LayoutData } from './$types';
+	import type { LayoutProps } from './$types';
 
-	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
+	let { children, data }: LayoutProps = $props();
 
 	const isCanvas = $derived(page.url.pathname.startsWith('/draw'));
 	const showVerifyBanner = $derived(data.user && data.emailVerified === false && !isCanvas);
+	const showFooter = $derived(!isCanvas);
 	let bannerDismissed = $state(false);
 </script>
 
@@ -38,6 +39,12 @@
 	<main class="main-content" class:canvas={isCanvas}>
 		{@render children()}
 	</main>
+
+	{#if showFooter}
+		<footer class="app-footer">
+			<span>&copy; {new Date().getFullYear()} Nyasper — Svelte Excalidraw App</span>
+		</footer>
+	{/if}
 </div>
 
 <style>
@@ -89,5 +96,14 @@
 		&:hover {
 			color: var(--text-primary);
 		}
+	}
+
+	.app-footer {
+		text-align: center;
+		padding: 1rem;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		border-top: 1px solid var(--border);
+		flex-shrink: 0;
 	}
 </style>

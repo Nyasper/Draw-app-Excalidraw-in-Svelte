@@ -12,13 +12,12 @@
 <nav class="nav">
 	<div class="nav-left">
 		<a href={resolve('/')} class="logo">Excalidraw App</a>
-		<a href={resolve('/')} class="nav-link">Home</a>
-		<a href={resolve('/about')} class="nav-link">About</a>
 		<a href={resolve('/draw')} class="nav-link">Draw</a>
+		<a href={resolve('/about')} class="nav-link">About</a>
 	</div>
 	<div class="nav-right">
 		{#if user}
-			<span class="user-name">{user.name}</span>
+			<a href={resolve('/profile')} class="nav-link">{user.name}</a>
 			<form method="post" action={resolve('/?/signOut')}>
 				<button class="btn btn-secondary" type="submit">Sign out</button>
 			</form>
@@ -70,11 +69,6 @@
 			color: var(--text-primary);
 			background-color: var(--bg-hover);
 		}
-	}
-
-	.user-name {
-		font-size: 0.85rem;
-		color: var(--text-muted);
 	}
 
 	.nav-right .btn {

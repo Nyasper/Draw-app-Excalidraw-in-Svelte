@@ -31,10 +31,13 @@
 	let selectedIds = new SvelteSet<number>();
 	let isDragging = $state(false);
 	let selectionRect = $state<{ x: number; y: number; w: number; h: number } | null>(null);
-	let containerEl: HTMLElement | null = $state(null);
+	let areaEl: HTMLElement | null = $state(null);
 	let dragStart = $state({ x: 0, y: 0 });
 	let lastClickedId = $state<number | null>(null);
 	let sidebarOpen = $state(true);
+
+	let contextMenu = $state<{ x: number; y: number; drawingId: number; title: string } | null>(null);
+	let moveFolderOpen = $state(false);
 
 	const selectedCount = $derived(selectedIds.size);
 
@@ -44,56 +47,51 @@
 	}
 
 	function toggleSelection(itemId: number, ctrl: boolean, shift: boolean) {
-		const newSelection = new SvelteSet(selectedIds);
-
 		if (shift && lastClickedId !== null) {
 			const ids = drawings.map((d) => d.id);
 			const startIdx = ids.indexOf(lastClickedId);
 			const endIdx = ids.indexOf(itemId);
 			if (startIdx === -1 || endIdx === -1) return;
 			const range = ids.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
-			if (ctrl) {
-				for (const id of range) newSelection.add(id);
-			} else {
-				newSelection.clear();
-				for (const id of range) newSelection.add(id);
-			}
+			if (!ctrl) selectedIds.clear();
+			for (const id of range) selectedIds.add(id);
 		} else if (ctrl) {
-			if (newSelection.has(itemId)) newSelection.delete(itemId);
-			else newSelection.add(itemId);
+			if (selectedIds.has(itemId)) selectedIds.delete(itemId);
+			else selectedIds.add(itemId);
 		} else {
-			newSelection.clear();
-			newSelection.add(itemId);
+			selectedIds.clear();
+			selectedIds.add(itemId);
 		}
-
-		selectedIds = newSelection;
 		lastClickedId = itemId;
 	}
 
 	function handleMouseDown(e: MouseEvent) {
 		const target = e.target as HTMLElement;
 		if (target.closest('a') || target.closest('button') || target.closest('input')) return;
-		if (!containerEl) return;
+		if (!areaEl) return;
 
-		const rect = containerEl.getBoundingClientRect();
-		dragStart = {
-			x: e.clientX - rect.left + containerEl.scrollLeft,
-			y: e.clientY - rect.top + containerEl.scrollTop
-		};
+		const rect = areaEl.getBoundingClientRect();
+		dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 		isDragging = true;
 		selectionRect = { x: dragStart.x, y: dragStart.y, w: 0, h: 0 };
 
 		if (!e.ctrlKey && !e.shiftKey) {
-			selectedIds = new SvelteSet();
+			selectedIds.clear();
 		}
+
+		const onMouseUp = () => {
+			handleMouseUp();
+			window.removeEventListener('mouseup', onMouseUp);
+		};
+		window.addEventListener('mouseup', onMouseUp);
 	}
 
 	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging || !containerEl) return;
+		if (!isDragging || !areaEl) return;
 
-		const rect = containerEl.getBoundingClientRect();
-		const cx = e.clientX - rect.left + containerEl.scrollLeft;
-		const cy = e.clientY - rect.top + containerEl.scrollTop;
+		const rect = areaEl.getBoundingClientRect();
+		const cx = e.clientX - rect.left;
+		const cy = e.clientY - rect.top;
 
 		selectionRect = {
 			x: Math.min(dragStart.x, cx),
@@ -104,21 +102,20 @@
 	}
 
 	function handleMouseUp() {
-		if (!isDragging || !selectionRect || !containerEl) {
+		if (!isDragging || !selectionRect || !areaEl) {
 			isDragging = false;
 			selectionRect = null;
 			return;
 		}
 
-		const items = containerEl.querySelectorAll('[data-drawing-id]');
-		const newSelection = new SvelteSet(selectedIds);
+		const items = areaEl.querySelectorAll('[data-drawing-id]');
 		const sr = selectionRect;
-		const containerRect = containerEl.getBoundingClientRect();
+		const areaRect = areaEl.getBoundingClientRect();
 
 		items.forEach((el) => {
 			const itemRect = el.getBoundingClientRect();
-			const ix = itemRect.left - containerRect.left + containerEl!.scrollLeft;
-			const iy = itemRect.top - containerRect.top + containerEl!.scrollTop;
+			const ix = itemRect.left - areaRect.left;
+			const iy = itemRect.top - areaRect.top;
 			const iw = itemRect.width;
 			const ih = itemRect.height;
 
@@ -126,24 +123,39 @@
 
 			if (intersects) {
 				const drawingId = Number(el.getAttribute('data-drawing-id'));
-				newSelection.add(drawingId);
+				selectedIds.add(drawingId);
 			}
 		});
-
-		selectedIds = newSelection;
 		isDragging = false;
 		selectionRect = null;
 	}
 
 	function clearSelection() {
-		selectedIds = new SvelteSet();
+		selectedIds.clear();
 	}
 
 	$effect(() => {
-		const up = () => isDragging && handleMouseUp();
-		window.addEventListener('mouseup', up);
-		return () => window.removeEventListener('mouseup', up);
+		const onAnyClick = (e: MouseEvent) => {
+			const target = e.target as HTMLElement;
+			if (contextMenu && !target.closest('.context-menu')) {
+				contextMenu = null;
+			}
+			if (moveFolderOpen && !target.closest('.move-folder-wrap')) {
+				moveFolderOpen = false;
+			}
+		};
+		window.addEventListener('click', onAnyClick);
+		return () => window.removeEventListener('click', onAnyClick);
 	});
+
+	function openContext(e: MouseEvent, d: DrawingItem) {
+		e.preventDefault();
+		const menuW = 160;
+		const menuH = 120;
+		const x = Math.min(e.clientX, window.innerWidth - menuW);
+		const y = Math.min(e.clientY, window.innerHeight - menuH);
+		contextMenu = { x: Math.max(0, x), y: Math.max(0, y), drawingId: d.id, title: d.title };
+	}
 
 	async function deleteSelected() {
 		if (selectedIds.size === 0) return;
@@ -154,13 +166,34 @@
 		}
 		window.location.reload();
 	}
+
+	async function moveSelectedToFolder(folderId: number | null) {
+		for (const id of selectedIds) {
+			await fetch(resolve(`/draw/${id}`), {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ folderId })
+			}).catch(() => {});
+		}
+		window.location.reload();
+	}
+
+	async function deleteDrawing(id: number) {
+		if (!confirm('Delete this drawing?')) return;
+		await fetch(resolve(`/draw/${id}`), { method: 'DELETE' }).catch(() => {});
+		window.location.reload();
+	}
 </script>
 
 <div class="dashboard">
 	<aside class="sidebar" class:collapsed={!sidebarOpen}>
 		<div class="sidebar-header">
-			<h2>Folders</h2>
-			<button class="sidebar-toggle" onclick={() => (sidebarOpen = !sidebarOpen)}>
+			<h2 class:hidden={!sidebarOpen}>Folders</h2>
+			<button
+				class="sidebar-toggle"
+				onclick={() => (sidebarOpen = !sidebarOpen)}
+				aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+			>
 				{sidebarOpen ? '\u00AB' : '\u00BB'}
 			</button>
 		</div>
@@ -186,7 +219,7 @@
 		{/if}
 	</aside>
 
-	<main class="dashboard-main" bind:this={containerEl}>
+	<main class="dashboard-main">
 		<div class="dashboard-header">
 			<h2>
 				{selectedFolderId
@@ -197,9 +230,40 @@
 				{#if selectedCount > 0}
 					<span class="selection-count">{selectedCount} selected</span>
 					<button class="btn btn-danger" onclick={deleteSelected}>Delete</button>
+					<div class="move-folder-wrap">
+						<button class="btn btn-secondary" onclick={() => (moveFolderOpen = !moveFolderOpen)}>
+							Move to...
+						</button>
+						{#if moveFolderOpen}
+							<div class="folder-dropdown">
+								{#each folders as f (f.id)}
+									<button
+										class="folder-dropdown-item"
+										onclick={() => {
+											moveSelectedToFolder(f.id);
+											moveFolderOpen = false;
+										}}
+									>
+										{f.name}
+									</button>
+								{/each}
+								<div class="folder-dropdown-divider"></div>
+								<button
+									class="folder-dropdown-item"
+									onclick={() => {
+										moveSelectedToFolder(null);
+										moveFolderOpen = false;
+									}}
+								>
+									No folder
+								</button>
+							</div>
+						{/if}
+					</div>
 					<button class="btn btn-secondary" onclick={clearSelection}>Clear</button>
 				{:else}
 					<div class="view-toggle">
+						<div class="pill-bg" class:right={viewMode === 'list'}></div>
 						<button
 							class="toggle-btn"
 							class:active={viewMode === 'grid'}
@@ -224,10 +288,10 @@
 			<p class="error">{message}</p>
 		{/if}
 
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
 			class="drawings-area"
-			class:grid={viewMode === 'grid'}
-			class:list={viewMode === 'list'}
+			bind:this={areaEl}
 			onmousemove={handleMouseMove}
 			onmousedown={handleMouseDown}
 			role="application"
@@ -248,6 +312,10 @@
 							ondblclick={() => {
 								window.location.href = resolve(`/draw/${d.id}`);
 							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') window.location.href = resolve(`/draw/${d.id}`);
+							}}
+							oncontextmenu={(e) => openContext(e, d)}
 						>
 							<div class="drawing-preview">
 								<span class="drawing-icon">&#9998;</span>
@@ -280,6 +348,10 @@
 							ondblclick={() => {
 								window.location.href = resolve(`/draw/${d.id}`);
 							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') window.location.href = resolve(`/draw/${d.id}`);
+							}}
+							oncontextmenu={(e) => openContext(e, d)}
 						>
 							<span class="col-name">{d.title}</span>
 							<span class="col-folder">{getFolderName(d.folderId)}</span>
@@ -307,6 +379,43 @@
 	</main>
 </div>
 
+{#if contextMenu}
+	<div class="context-menu" style="left: {contextMenu.x}px; top: {contextMenu.y}px;" role="menu">
+		<a href={resolve(`/draw/${contextMenu.drawingId}`)} class="context-item" role="menuitem">Open</a>
+		<button
+			class="context-item"
+			role="menuitem"
+			onclick={() => {
+				const ctx = contextMenu!;
+				const newTitle = prompt('Rename drawing:', ctx.title);
+				if (newTitle && newTitle !== ctx.title) {
+					fetch(resolve(`/draw/${ctx.drawingId}`), {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ title: newTitle })
+					})
+						.then(() => window.location.reload())
+						.catch(() => {});
+				}
+				contextMenu = null;
+			}}
+		>
+			Rename
+		</button>
+		<button
+			class="context-item context-danger"
+			role="menuitem"
+			onclick={() => {
+				const ctx = contextMenu!;
+				deleteDrawing(ctx.drawingId);
+				contextMenu = null;
+			}}
+		>
+			Delete
+		</button>
+	</div>
+{/if}
+
 <style>
 	.dashboard {
 		display: flex;
@@ -324,6 +433,7 @@
 		gap: 0.75rem;
 		flex-shrink: 0;
 		transition: width 0.2s;
+		overflow: hidden;
 
 		&.collapsed {
 			width: 44px;
@@ -335,12 +445,20 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		flex-shrink: 0;
 
 		h2 {
 			font-size: 0.8rem;
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 			color: var(--text-muted);
+			white-space: nowrap;
+			overflow: hidden;
+
+			&.hidden {
+				opacity: 0;
+				pointer-events: none;
+			}
 		}
 	}
 
@@ -351,6 +469,7 @@
 		font-size: 1rem;
 		padding: 0.2rem 0.4rem;
 		border-radius: 4px;
+		flex-shrink: 0;
 
 		&:hover {
 			background-color: var(--bg-hover);
@@ -426,9 +545,28 @@
 
 	.view-toggle {
 		display: flex;
+		position: relative;
 		background-color: var(--bg-tertiary);
 		border-radius: var(--radius);
 		padding: 0.2rem;
+		z-index: 0;
+	}
+
+	.pill-bg {
+		position: absolute;
+		top: 0.2rem;
+		left: 0.2rem;
+		height: calc(100% - 0.4rem);
+		width: calc(50% - 0.2rem);
+		background-color: var(--bg-primary);
+		border-radius: calc(var(--radius) - 2px);
+		transition: transform 0.2s ease;
+		z-index: 0;
+		pointer-events: none;
+
+		&.right {
+			transform: translateX(100%);
+		}
 	}
 
 	.toggle-btn {
@@ -436,13 +574,13 @@
 		font-size: 0.8rem;
 		font-weight: 500;
 		border: none;
-		border-radius: calc(var(--radius) - 2px);
 		background: transparent;
 		color: var(--text-muted);
-		transition: all 0.15s;
+		position: relative;
+		z-index: 1;
+		transition: color 0.15s;
 
 		&.active {
-			background-color: var(--bg-primary);
 			color: var(--text-primary);
 		}
 
@@ -454,6 +592,47 @@
 	.selection-count {
 		font-size: 0.85rem;
 		color: var(--text-muted);
+	}
+
+	.move-folder-wrap {
+		position: relative;
+	}
+
+	.folder-dropdown {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		margin-top: 0.35rem;
+		background-color: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.35rem;
+		min-width: 160px;
+		z-index: 20;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	.folder-dropdown-item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		color: var(--text-primary);
+		padding: 0.4rem 0.6rem;
+		font-size: 0.8rem;
+		border-radius: 4px;
+		font-family: inherit;
+
+		&:hover {
+			background-color: var(--bg-hover);
+		}
+	}
+
+	.folder-dropdown-divider {
+		height: 1px;
+		background-color: var(--border);
+		margin: 0.25rem 0;
 	}
 
 	.header-actions .btn {
@@ -606,6 +785,8 @@
 		pointer-events: none;
 		z-index: 10;
 		border-radius: 2px;
+		top: 0;
+		left: 0;
 	}
 
 	.empty-state {
@@ -615,6 +796,43 @@
 
 		p {
 			margin-bottom: 0.25rem;
+		}
+	}
+
+	.context-menu {
+		position: fixed;
+		background-color: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		padding: 0.35rem;
+		min-width: 150px;
+		z-index: 9999;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	}
+
+	.context-item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		color: var(--text-primary);
+		padding: 0.45rem 0.7rem;
+		font-size: 0.82rem;
+		border-radius: 4px;
+		font-family: inherit;
+		text-decoration: none;
+
+		&:hover {
+			background-color: var(--bg-hover);
+		}
+	}
+
+	.context-danger {
+		color: var(--danger);
+
+		&:hover {
+			background-color: rgba(224, 108, 108, 0.15);
 		}
 	}
 </style>

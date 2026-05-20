@@ -69,7 +69,8 @@
 
 {#if loading}
 	<div class="loading-container">
-		<p>Loading...</p>
+		<div class="loading-spinner"></div>
+		<p>Loading canvas...</p>
 	</div>
 {/if}
 
@@ -85,15 +86,33 @@
 		inset: 0;
 		width: 100vw;
 		height: 100vh;
-		background-color: black;
+		background-color: var(--bg-primary);
 		z-index: 10000;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		gap: 1.5rem;
 
 		p {
-			font-size: 3em;
-			color: white;
+			font-size: 1.1rem;
+			color: var(--text-muted);
+			font-family: var(--font-family);
+		}
+	}
+
+	.loading-spinner {
+		width: 40px;
+		height: 40px;
+		border: 3px solid var(--bg-tertiary);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
 		}
 	}
 </style>
