@@ -8,9 +8,10 @@
 	import { resolve } from '$app/paths';
 	import Excalidraw from '$lib/components/Excalidraw.svelte';
 	import { goto } from '$app/navigation';
-	import type { PageServerData } from './$types';
+	import type { PageProps } from './$types';
+	import { browser } from '$app/environment';
 
-	let { data }: { data: PageServerData } = $props();
+	let { data }: PageProps = $props();
 
 	let excalidrawAPI: ExcalidrawImperativeAPI | null = $state(null);
 	let title = $state('Untitled');
@@ -22,6 +23,7 @@
 	const guest = $derived(!user);
 
 	function getLocalData() {
+		if (!browser) return;
 		if (!guest) return null;
 		const saved = localStorage.getItem('excalidraw-guest');
 		if (!saved) return null;
