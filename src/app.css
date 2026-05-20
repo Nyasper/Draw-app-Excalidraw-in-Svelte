@@ -112,3 +112,9 @@ input {
 		opacity: 0.9;
 	}
 }
+
+a.btn-primary,
+a.btn-secondary,
+a.btn-danger {
+	color: inherit;
+}

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
+	import { enhance } from '$app/forms';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import Nav from '$lib/components/Nav.svelte';
@@ -8,6 +10,8 @@
 	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
 
 	const isCanvas = $derived(page.url.pathname.startsWith('/draw'));
+	const showVerifyBanner = $derived(data.user && data.emailVerified === false && !isCanvas);
+	let bannerDismissed = $state(false);
 </script>
 
 <svelte:head>
@@ -18,6 +22,19 @@
 	{#if !isCanvas}
 		<Nav user={data.user} />
 	{/if}
+
+	{#if showVerifyBanner && !bannerDismissed}
+		<div class="verify-banner">
+			<span>Your email is not verified. Check your inbox or resend the verification email.</span>
+			<form method="post" action={resolve('/?/resendVerification')} use:enhance>
+				<button class="btn btn-secondary btn-sm" type="submit">Resend verification</button>
+			</form>
+			<button class="dismiss-btn" onclick={() => (bannerDismissed = true)} aria-label="Dismiss"
+				>&times;</button
+			>
+		</div>
+	{/if}
+
 	<main class="main-content" class:canvas={isCanvas}>
 		{@render children()}
 	</main>
@@ -38,5 +55,39 @@
 
 	.main-content.canvas {
 		overflow: hidden;
+	}
+
+	.verify-banner {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.5rem 1.5rem;
+		background-color: rgba(105, 101, 219, 0.15);
+		border-bottom: 1px solid var(--accent);
+		font-size: 0.85rem;
+		color: var(--text-primary);
+		flex-shrink: 0;
+	}
+
+	.verify-banner span {
+		flex: 1;
+	}
+
+	.btn-sm {
+		font-size: 0.75rem;
+		padding: 0.3rem 0.75rem;
+	}
+
+	.dismiss-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		font-size: 1.25rem;
+		padding: 0 0.25rem;
+		line-height: 1;
+
+		&:hover {
+			color: var(--text-primary);
+		}
 	}
 </style>

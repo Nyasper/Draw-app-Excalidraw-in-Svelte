@@ -16,7 +16,12 @@ export const load: PageServerLoad = async (event) => {
 	const folderParam = event.url.searchParams.get('folder');
 	const selectedFolderId = folderParam ? Number(folderParam) : null;
 
-	const folders = await getUserFolders(user.id).catch(() => []);
+	let folders = await getUserFolders(user.id).catch(() => []);
+	if (folders.length === 0) {
+		await createFolder(user.id, 'My Drawings').catch(() => {});
+		folders = await getUserFolders(user.id).catch(() => []);
+	}
+
 	const drawings = selectedFolderId
 		? await getFolderDrawings(user.id, selectedFolderId).catch(() => [])
 		: await getUserDrawings(user.id).catch(() => []);
@@ -28,6 +33,23 @@ export const actions: Actions = {
 	signOut: async (event) => {
 		await auth.api.signOut({ headers: event.request.headers });
 		return redirect(302, '/');
+	},
+	resendVerification: async (event) => {
+		const user = event.locals.user;
+		if (!user) return fail(401, { message: 'Not authenticated' });
+
+		try {
+			await auth.api.sendVerificationEmail({
+				body: {
+					email: user.email,
+					callbackURL: `${process.env.ORIGIN || 'http://localhost:5173'}/`
+				}
+			});
+		} catch {
+			return fail(500, { message: 'Failed to send verification email' });
+		}
+
+		return { message: 'Verification email sent! Check your inbox.' };
 	},
 	createFolder: async (event) => {
 		const user = event.locals.user;

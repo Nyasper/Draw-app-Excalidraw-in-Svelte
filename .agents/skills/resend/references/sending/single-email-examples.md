@@ -25,15 +25,15 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const { data, error } = await resend.emails.send(
-  {
-    from: 'Acme <onboarding@resend.dev>',
-    to: ['delivered@resend.dev'],
-    subject: 'Order Confirmation',
-    html: '<p>Your order has been confirmed.</p>',
-  },
-  {
-    idempotencyKey: `order-confirmation/${orderId}`,
-  }
+	{
+		from: 'Acme <onboarding@resend.dev>',
+		to: ['delivered@resend.dev'],
+		subject: 'Order Confirmation',
+		html: '<p>Your order has been confirmed.</p>'
+	},
+	{
+		idempotencyKey: `order-confirmation/${orderId}`
+	}
 );
 ```
 
@@ -94,17 +94,17 @@ curl -X POST 'https://api.resend.com/emails' \
 
 ### Common Error Codes
 
-| Code | Description | Action |
-|------|-------------|--------|
-| 400 | Bad request (invalid params) | Fix request parameters |
-| 400 | `invalid_idempotency_key` | Key must be 1-256 characters |
-| 401 | Invalid API key | Check RESEND_API_KEY |
-| 403 | Domain not verified | Verify domain at resend.com/domains |
-| 409 | `invalid_idempotent_request` | Key already used with different payload |
-| 409 | `concurrent_idempotent_requests` | Same key request in progress, retry later |
-| 422 | Unprocessable entity | Check email format/content |
-| 429 | Rate limited | Implement backoff and retry |
-| 500 | Server error | Retry with backoff |
+| Code | Description                      | Action                                    |
+| ---- | -------------------------------- | ----------------------------------------- |
+| 400  | Bad request (invalid params)     | Fix request parameters                    |
+| 400  | `invalid_idempotency_key`        | Key must be 1-256 characters              |
+| 401  | Invalid API key                  | Check RESEND_API_KEY                      |
+| 403  | Domain not verified              | Verify domain at resend.com/domains       |
+| 409  | `invalid_idempotent_request`     | Key already used with different payload   |
+| 409  | `concurrent_idempotent_requests` | Same key request in progress, retry later |
+| 422  | Unprocessable entity             | Check email format/content                |
+| 429  | Rate limited                     | Implement backoff and retry               |
+| 500  | Server error                     | Retry with backoff                        |
 
 ### Node.js
 
@@ -114,27 +114,27 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const { data, error } = await resend.emails.send({
-  from: 'Acme <onboarding@resend.dev>',
-  to: ['delivered@resend.dev'],
-  subject: 'Hello',
-  html: '<p>Hello world</p>',
+	from: 'Acme <onboarding@resend.dev>',
+	to: ['delivered@resend.dev'],
+	subject: 'Hello',
+	html: '<p>Hello world</p>'
 });
 
 if (error) {
-  console.error('Failed to send email:', error.message);
+	console.error('Failed to send email:', error.message);
 
-  // Handle specific error types
-  if (error.name === 'validation_error') {
-    // Invalid parameters - don't retry
-    throw new Error(`Invalid email params: ${error.message}`);
-  }
+	// Handle specific error types
+	if (error.name === 'validation_error') {
+		// Invalid parameters - don't retry
+		throw new Error(`Invalid email params: ${error.message}`);
+	}
 
-  if (error.name === 'rate_limit_exceeded') {
-    // Rate limited - retry after delay
-    console.log('Rate limited, retrying...');
-  }
+	if (error.name === 'rate_limit_exceeded') {
+		// Rate limited - retry after delay
+		console.log('Rate limited, retrying...');
+	}
 
-  return;
+	return;
 }
 
 console.log('Email sent:', data.id);
@@ -206,47 +206,47 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendEmailWithRetry(
-  params: Parameters<typeof resend.emails.send>[0],
-  options: { maxRetries?: number; idempotencyKey?: string } = {}
+	params: Parameters<typeof resend.emails.send>[0],
+	options: { maxRetries?: number; idempotencyKey?: string } = {}
 ) {
-  const { maxRetries = 3, idempotencyKey } = options;
+	const { maxRetries = 3, idempotencyKey } = options;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const { data, error } = await resend.emails.send(
-      params,
-      idempotencyKey ? { idempotencyKey } : undefined
-    );
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		const { data, error } = await resend.emails.send(
+			params,
+			idempotencyKey ? { idempotencyKey } : undefined
+		);
 
-    if (!error) {
-      return data;
-    }
+		if (!error) {
+			return data;
+		}
 
-    // Don't retry validation errors or idempotency conflicts
-    if (error.name === 'validation_error' || error.name === 'invalid_idempotent_request') {
-      throw new Error(`${error.name}: ${error.message}`);
-    }
+		// Don't retry validation errors or idempotency conflicts
+		if (error.name === 'validation_error' || error.name === 'invalid_idempotent_request') {
+			throw new Error(`${error.name}: ${error.message}`);
+		}
 
-    // Last attempt failed
-    if (attempt === maxRetries) {
-      throw new Error(`Failed after ${maxRetries + 1} attempts: ${error.message}`);
-    }
+		// Last attempt failed
+		if (attempt === maxRetries) {
+			throw new Error(`Failed after ${maxRetries + 1} attempts: ${error.message}`);
+		}
 
-    // Exponential backoff: 1s, 2s, 4s...
-    const delay = Math.pow(2, attempt) * 1000;
-    console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
+		// Exponential backoff: 1s, 2s, 4s...
+		const delay = Math.pow(2, attempt) * 1000;
+		console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+		await new Promise((resolve) => setTimeout(resolve, delay));
+	}
 }
 
 // Usage
 const result = await sendEmailWithRetry(
-  {
-    from: 'Acme <onboarding@resend.dev>',
-    to: ['delivered@resend.dev'],
-    subject: 'Order Confirmation',
-    html: '<p>Your order is confirmed.</p>',
-  },
-  { idempotencyKey: `order-confirmation/${orderId}` }
+	{
+		from: 'Acme <onboarding@resend.dev>',
+		to: ['delivered@resend.dev'],
+		subject: 'Order Confirmation',
+		html: '<p>Your order is confirmed.</p>'
+	},
+	{ idempotencyKey: `order-confirmation/${orderId}` }
 );
 ```
 
@@ -347,62 +347,66 @@ import { randomUUID } from 'crypto';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface SendEmailOptions {
-  to: string | string[];
-  subject: string;
-  html: string;
-  from?: string;
-  replyTo?: string;
-  idempotencyKey?: string;
-  maxRetries?: number;
+	to: string | string[];
+	subject: string;
+	html: string;
+	from?: string;
+	replyTo?: string;
+	idempotencyKey?: string;
+	maxRetries?: number;
 }
 
 async function sendEmail(options: SendEmailOptions) {
-  const {
-    to,
-    subject,
-    html,
-    from = 'Acme <noreply@acme.com>',
-    replyTo,
-    idempotencyKey = randomUUID(),
-    maxRetries = 3,
-  } = options;
+	const {
+		to,
+		subject,
+		html,
+		from = 'Acme <noreply@acme.com>',
+		replyTo,
+		idempotencyKey = randomUUID(),
+		maxRetries = 3
+	} = options;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const { data, error } = await resend.emails.send(
-      {
-        from,
-        to: Array.isArray(to) ? to : [to],
-        subject,
-        html,
-        ...(replyTo && { replyTo }),
-      },
-      { idempotencyKey }
-    );
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		const { data, error } = await resend.emails.send(
+			{
+				from,
+				to: Array.isArray(to) ? to : [to],
+				subject,
+				html,
+				...(replyTo && { replyTo })
+			},
+			{ idempotencyKey }
+		);
 
-    if (!error) {
-      return { success: true, id: data.id };
-    }
+		if (!error) {
+			return { success: true, id: data.id };
+		}
 
-    // Don't retry client errors or idempotency conflicts
-    if (error.name === 'validation_error' || error.name === 'not_found' || error.name === 'invalid_idempotent_request') {
-      return { success: false, error: error.message, retryable: false };
-    }
+		// Don't retry client errors or idempotency conflicts
+		if (
+			error.name === 'validation_error' ||
+			error.name === 'not_found' ||
+			error.name === 'invalid_idempotent_request'
+		) {
+			return { success: false, error: error.message, retryable: false };
+		}
 
-    if (attempt < maxRetries) {
-      const delay = Math.pow(2, attempt) * 1000;
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
+		if (attempt < maxRetries) {
+			const delay = Math.pow(2, attempt) * 1000;
+			await new Promise((r) => setTimeout(r, delay));
+		}
+	}
 
-  return { success: false, error: 'Max retries exceeded', retryable: true };
+	return { success: false, error: 'Max retries exceeded', retryable: true };
 }
 
 // Usage
 const result = await sendEmail({
-  to: 'delivered@resend.dev',
-  subject: 'Welcome!',
-  html: '<h1>Welcome to Acme</h1>',
-  idempotencyKey: `welcome-email/${userId}`,
+	to: 'delivered@resend.dev',
+	subject: 'Welcome!',
+	html: '<h1>Welcome to Acme</h1>',
+	idempotencyKey: `welcome-email/${userId}`
 });
 ```
 

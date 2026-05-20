@@ -6,34 +6,34 @@ Group contacts for broadcast targeting. Segments replaced legacy "audiences" —
 
 ### Node.js
 
-| Operation | Method |
-|-----------|--------|
-| Create | `resend.segments.create(params)` |
-| Get | `resend.segments.get(id)` |
-| List | `resend.segments.list(params?)` |
-| Delete | `resend.segments.remove(id)` — not `.delete()` |
+| Operation | Method                                         |
+| --------- | ---------------------------------------------- |
+| Create    | `resend.segments.create(params)`               |
+| Get       | `resend.segments.get(id)`                      |
+| List      | `resend.segments.list(params?)`                |
+| Delete    | `resend.segments.remove(id)` — not `.delete()` |
 
 No update endpoint — delete and recreate to rename a segment.
 
 ### Python
 
-| Operation | Method |
-|-----------|--------|
-| Create | `resend.Segments.create(params)` |
-| Get | `resend.Segments.get(id)` |
-| List | `resend.Segments.list(params?)` |
-| Delete | `resend.Segments.remove(id)` |
+| Operation | Method                           |
+| --------- | -------------------------------- |
+| Create    | `resend.Segments.create(params)` |
+| Get       | `resend.Segments.get(id)`        |
+| List      | `resend.Segments.list(params?)`  |
+| Delete    | `resend.Segments.remove(id)`     |
 
 ## Create Segment
 
 ```typescript
 const { data, error } = await resend.segments.create({
-  name: 'Active Users',
+	name: 'Active Users'
 });
 
 if (error) {
-  console.error(error);
-  return;
+	console.error(error);
+	return;
 }
 
 console.log(data.id); // seg_xxxxxxxx
@@ -59,19 +59,19 @@ Pass `segmentId` when creating a broadcast to target only contacts in that segme
 
 ```typescript
 await resend.broadcasts.create({
-  name: 'Product Update',
-  segmentId: 'seg_xxx',
-  from: 'updates@acme.com',
-  subject: 'Product Update',
-  html: '<p>New features!</p>',
+	name: 'Product Update',
+	segmentId: 'seg_xxx',
+	from: 'updates@acme.com',
+	subject: 'Product Update',
+	html: '<p>New features!</p>'
 });
 ```
 
 ## Common Mistakes
 
-| Mistake | Fix |
-|---------|-----|
-| Using `audienceId` | Audiences are deprecated — use `segmentId` |
-| Calling `.update()` | No update endpoint — `.remove()` then `.create()` to rename |
-| Calling `.delete()` | SDK method is `.remove()` |
+| Mistake                       | Fix                                                             |
+| ----------------------------- | --------------------------------------------------------------- |
+| Using `audienceId`            | Audiences are deprecated — use `segmentId`                      |
+| Calling `.update()`           | No update endpoint — `.remove()` then `.create()` to rename     |
+| Calling `.delete()`           | SDK method is `.remove()`                                       |
 | Expecting contacts auto-added | Contacts must be explicitly added via `contacts.segments.add()` |

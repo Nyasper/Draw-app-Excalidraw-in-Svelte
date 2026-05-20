@@ -23,6 +23,7 @@
 				Password
 				<input type="password" name="password" required />
 			</label>
+			<a href={resolve('/forgot-password')} class="forgot-link">Forgot your password?</a>
 			<button class="btn btn-primary" type="submit">Sign in</button>
 		</form>
 
@@ -139,5 +140,15 @@
 		margin-top: 1.5rem;
 		font-size: 0.85rem;
 		color: var(--text-muted);
+	}
+
+	.forgot-link {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		text-align: right;
+
+		&:hover {
+			color: var(--accent);
+		}
 	}
 </style>

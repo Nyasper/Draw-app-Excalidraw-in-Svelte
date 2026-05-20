@@ -1,4 +1,13 @@
-import { pgTable, serial, integer, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	serial,
+	integer,
+	text,
+	jsonb,
+	timestamp,
+	index,
+	type PgColumn
+} from 'drizzle-orm/pg-core';
 import { user } from './auth.schema';
 
 export const folder = pgTable(
@@ -8,7 +17,7 @@ export const folder = pgTable(
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
-		parentFolderId: integer('parent_folder_id').references(() => folder.id, {
+		parentFolderId: integer('parent_folder_id').references((): PgColumn => folder.id as PgColumn, {
 			onDelete: 'set null'
 		}),
 		name: text('name').notNull(),

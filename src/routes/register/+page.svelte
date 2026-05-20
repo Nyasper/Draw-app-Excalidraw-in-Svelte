@@ -25,13 +25,24 @@
 			</label>
 			<label>
 				Password
-				<input type="password" name="password" required />
+				<input type="password" name="password" required minlength="8" />
+			</label>
+			<label>
+				Confirm password
+				<input type="password" name="passwordConfirm" required minlength="8" />
 			</label>
 			<button class="btn btn-primary" type="submit">Create account</button>
 		</form>
 
 		{#if form?.message}
-			<p class="error">{form.message}</p>
+			<p
+				class="feedback"
+				class:error={form.message.includes('failed') ||
+					form.message.includes('not match') ||
+					form.message.includes('least 8')}
+			>
+				{form.message}
+			</p>
 		{/if}
 
 		<div class="divider">
@@ -106,9 +117,13 @@
 
 	.error {
 		color: var(--danger);
+	}
+
+	.feedback {
 		font-size: 0.85rem;
 		text-align: center;
 		margin-top: 0.5rem;
+		color: var(--success);
 	}
 
 	.divider {

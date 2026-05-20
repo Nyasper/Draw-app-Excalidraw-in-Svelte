@@ -24,7 +24,7 @@
 ## Environment
 
 - Copy `.env.example` to `.env` and fill in values. `.env` is gitignored.
-- Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+- Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
 
 ## Architecture
 
@@ -42,7 +42,8 @@ src/
       Nav.svelte              Top navigation bar (auth-aware)
       Dashboard.svelte        Folder sidebar + drawing grid
     server/
-      auth.ts                 Better Auth config (Drizzle adapter, email+password, GitHub OAuth)
+      auth.ts                 Better Auth config (Drizzle adapter, email/password + OAuth, email verificacion, password reset)
+      email.ts                Resend SDK wrapper for sending transactional emails
       db/
         index.ts              Drizzle ORM + postgres.js connection (uses process.env for jiti compat)
         schema.ts             App tables: folder, drawing + re-exports auth.schema
@@ -52,14 +53,20 @@ src/
     +layout.svelte            Root layout: conditionally shows Nav (hidden on /draw)
     +layout.server.ts         Provides user to all routes
     +page.svelte              Home: landing page (guest) or Dashboard (authenticated)
-    +page.server.ts           Load folders/drawings if auth; signOut action
+    +page.server.ts           Load folders/drawings if auth; signOut, createFolder, createDrawing actions
     about/+page.svelte        About page (EN/ES project explanation)
     login/
-      +page.svelte            Login form (email + GitHub OAuth)
+      +page.svelte            Login form (email + GitHub OAuth + forgot password link)
       +page.server.ts         signInEmail, signInSocial actions
     register/
-      +page.svelte            Register form (email + GitHub OAuth)
+      +page.svelte            Register form (email + GitHub OAuth + password confirmation)
       +page.server.ts         signUpEmail, signInSocial actions
+    forgot-password/
+      +page.svelte            Request password reset form
+      +page.server.ts         requestReset action (sends email via Resend)
+    reset-password/
+      +page.svelte            Set new password form (token from email)
+      +page.server.ts         resetPassword action
     draw/
       +page.svelte            Canvas: guest (localStorage) or auth (DB auto-save with debounce)
       +page.server.ts         Provides user info
@@ -91,6 +98,11 @@ src/
 - **Nav hidden on canvas**: Root layout checks `$app/state.page.url.pathname` — if starts with `/draw`, Nav is hidden for full-screen canvas.
 - **JSONB for Excalidraw state**: `elements`, `app_state`, `files` stored as JSONB. `collaborators` is always reset to empty Map on load.
 - **CSS**: Native CSS variables in `app.css`. Dark theme matching Excalidraw's palette (`--bg-primary: #1e1e1e`, `--accent: #6965db`).
+- **Email verification**: Enabled via `emailVerification.requireEmailVerification`. Uses Resend SDK to send verification links. Unverified users cannot sign in.
+- **Password reset**: Full forgot/reset flow via `emailAndPassword.sendResetPassword` with Resend. Token expires in 1 hour.
+- **Default folder**: First authenticated page load auto-creates a "My Drawings" folder if none exist.
+- **Dashboard**: Drag-to-select with mouse rectangle, Ctrl+click (toggle), Shift+click (range). View toggle between grid (cards) and list (table with dates). Bulk delete for selected drawings.
+- **Resend**: SDK wrapper in `src/lib/server/email.ts`. Uses idempotency keys, returns `{ ok, error/id }` tuple. Never called from browser (API key protection).
 
 ## Framework quirks
 
@@ -111,4 +123,4 @@ src/
 ## Gotchas
 
 - **`db/index.ts` uses `process.env`** instead of `$env/dynamic/private` for compatibility with the Better Auth CLI (jiti).
-- **All packages are in `devDependencies`** — there are no production `dependencies`.
+- **All packages are in `devDependencies`** — there are no production `dependencies`. Resend is the exception (used server-side only).

@@ -35,7 +35,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0 1.5rem;
-		height: 48px;
+		height: 52px;
 		background-color: var(--bg-secondary);
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
@@ -62,9 +62,13 @@
 	.nav-link {
 		font-size: 0.85rem;
 		color: var(--text-muted);
+		transition: color 0.15s;
+		padding: 0.3rem 0.5rem;
+		border-radius: var(--radius);
 
 		&:hover {
 			color: var(--text-primary);
+			background-color: var(--bg-hover);
 		}
 	}
 
@@ -74,7 +78,14 @@
 	}
 
 	.nav-right .btn {
-		font-size: 0.8rem;
-		padding: 0.35rem 0.85rem;
+		font-size: 0.85rem;
+		padding: 0.5rem 1rem;
+		transition:
+			background-color 0.15s,
+			transform 0.15s;
+
+		&:hover:not(:disabled) {
+			transform: translateY(-1px);
+		}
 	}
 </style>

@@ -1,82 +1,82 @@
 {
-  "version": 1,
-  "skills": {
-    "accessibility": {
-      "source": "addyosmani/web-quality-skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "bffe3d08cfe92ebad63699f74ce29e35c19850ebfbf474c1463183cfe34d6a09"
-    },
-    "best-practices": {
-      "source": "better-auth/skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "0d59bc23f61ba03b850aa3b81392044c5c7fa3662a5f61b98490b20b0f14a56a"
-    },
-    "bun": {
-      "source": "midudev/autoskills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "1386ed5490ed278e38312a416c9aa074dbe3849f32ae7f841e4142fef5d4df94"
-    },
-    "drizzle": {
-      "source": "bobmatnyc/claude-mpm-skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "ee38c0b7737febd7409d84e613099a0f276e215e0bbda418b2593786ea8a4754"
-    },
-    "email-best-practices": {
-      "source": "resend/resend-skills",
-      "sourceType": "github",
-      "skillPath": "skills/email-best-practices/SKILL.md",
-      "computedHash": "d0d264878e1201196115a47106e0def3282e6be1a5a2b231e2ef39a4641203da"
-    },
-    "emailAndPassword": {
-      "source": "better-auth/skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "1cbc9527756aa933c0f2f5ad7f18fe493f78ef0f4b6f073b624fbf6ccbd463c9"
-    },
-    "frontend-design": {
-      "source": "anthropics/skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "82fb11a63fb1e35ee2469516ed02d54695f783115b1540c0e783197af4240a3a"
-    },
-    "organization": {
-      "source": "better-auth/skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "74bd4e58dd4b66466f79cf0d00a5e75d5ca81b98c0461ee8cd7faba7d8dc16fa"
-    },
-    "resend": {
-      "source": "resend/resend-skills",
-      "sourceType": "github",
-      "skillPath": "skills/resend/SKILL.md",
-      "computedHash": "27aa881e2a230f9ea335cd1ee9f847a0b00b38a9b73eaf2a365c63abb9cb4980"
-    },
-    "seo": {
-      "source": "addyosmani/web-quality-skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "c184da724d1c61ad077f27418ea8e7e88fd54bcdf98165e18be7e4681cbd5e20"
-    },
-    "svelte-code-writer": {
-      "source": "sveltejs/ai-tools",
-      "sourceType": "autoskills-registry",
-      "computedHash": "b5e12f4a6369f9e482d863fd0dde5cfc215041947902dacc416a2f9a50da166a"
-    },
-    "svelte5-best-practices": {
-      "source": "ejirocodes/agent-skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "89df0819dcaf5292635267d6e4262f274845c0efa3db7bc4c2a0d5aac2431117"
-    },
-    "twoFactor": {
-      "source": "better-auth/skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "85230144b20eed676d0cbe8d28997cb9ccc0b293517204215adad0d74fae9a9d"
-    },
-    "typescript-advanced-types": {
-      "source": "wshobson/agents",
-      "sourceType": "autoskills-registry",
-      "computedHash": "5ca0e177c6aaaba1889255691224daafdb7d71f317cc70bede1590d3907ded42"
-    },
-    "vite": {
-      "source": "antfu/skills",
-      "sourceType": "autoskills-registry",
-      "computedHash": "e0b52fe3ffea533e1e543ac8a8a20fccca3beed9f8bdc31a0934fe9f554439e8"
-    }
-  }
+	"version": 1,
+	"skills": {
+		"accessibility": {
+			"source": "addyosmani/web-quality-skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "bffe3d08cfe92ebad63699f74ce29e35c19850ebfbf474c1463183cfe34d6a09"
+		},
+		"best-practices": {
+			"source": "better-auth/skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "0d59bc23f61ba03b850aa3b81392044c5c7fa3662a5f61b98490b20b0f14a56a"
+		},
+		"bun": {
+			"source": "midudev/autoskills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "1386ed5490ed278e38312a416c9aa074dbe3849f32ae7f841e4142fef5d4df94"
+		},
+		"drizzle": {
+			"source": "bobmatnyc/claude-mpm-skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "ee38c0b7737febd7409d84e613099a0f276e215e0bbda418b2593786ea8a4754"
+		},
+		"email-best-practices": {
+			"source": "resend/resend-skills",
+			"sourceType": "github",
+			"skillPath": "skills/email-best-practices/SKILL.md",
+			"computedHash": "d0d264878e1201196115a47106e0def3282e6be1a5a2b231e2ef39a4641203da"
+		},
+		"emailAndPassword": {
+			"source": "better-auth/skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "1cbc9527756aa933c0f2f5ad7f18fe493f78ef0f4b6f073b624fbf6ccbd463c9"
+		},
+		"frontend-design": {
+			"source": "anthropics/skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "82fb11a63fb1e35ee2469516ed02d54695f783115b1540c0e783197af4240a3a"
+		},
+		"organization": {
+			"source": "better-auth/skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "74bd4e58dd4b66466f79cf0d00a5e75d5ca81b98c0461ee8cd7faba7d8dc16fa"
+		},
+		"resend": {
+			"source": "resend/resend-skills",
+			"sourceType": "github",
+			"skillPath": "skills/resend/SKILL.md",
+			"computedHash": "27aa881e2a230f9ea335cd1ee9f847a0b00b38a9b73eaf2a365c63abb9cb4980"
+		},
+		"seo": {
+			"source": "addyosmani/web-quality-skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "c184da724d1c61ad077f27418ea8e7e88fd54bcdf98165e18be7e4681cbd5e20"
+		},
+		"svelte-code-writer": {
+			"source": "sveltejs/ai-tools",
+			"sourceType": "autoskills-registry",
+			"computedHash": "b5e12f4a6369f9e482d863fd0dde5cfc215041947902dacc416a2f9a50da166a"
+		},
+		"svelte5-best-practices": {
+			"source": "ejirocodes/agent-skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "89df0819dcaf5292635267d6e4262f274845c0efa3db7bc4c2a0d5aac2431117"
+		},
+		"twoFactor": {
+			"source": "better-auth/skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "85230144b20eed676d0cbe8d28997cb9ccc0b293517204215adad0d74fae9a9d"
+		},
+		"typescript-advanced-types": {
+			"source": "wshobson/agents",
+			"sourceType": "autoskills-registry",
+			"computedHash": "5ca0e177c6aaaba1889255691224daafdb7d71f317cc70bede1590d3907ded42"
+		},
+		"vite": {
+			"source": "antfu/skills",
+			"sourceType": "autoskills-registry",
+			"computedHash": "e0b52fe3ffea533e1e543ac8a8a20fccca3beed9f8bdc31a0934fe9f554439e8"
+		}
+	}
 }

@@ -12,7 +12,6 @@
 
 {#if data.user}
 	<Dashboard
-		user={data.user}
 		folders={data.folders}
 		drawings={data.drawings}
 		selectedFolderId={data.selectedFolderId}
