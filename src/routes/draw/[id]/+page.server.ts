@@ -18,6 +18,7 @@ export const load: PageServerLoad = async (event) => {
 		drawing: {
 			id: d.id,
 			title: d.title,
+			folderId: d.folderId,
 			elements: d.elements as Record<string, unknown>[] | null,
 			appState: d.appState as Record<string, unknown> | null,
 			files: d.files as Record<string, unknown> | null,

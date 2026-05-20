@@ -25,25 +25,52 @@
 		message?: string;
 	}
 
+	type ContextMenuType = 'drawing' | 'folder' | 'dashboard' | 'sidebar';
+	interface ContextMenuState {
+		x: number;
+		y: number;
+		type: ContextMenuType;
+		id?: number;
+		title?: string;
+	}
+
+	const DRAG_THRESHOLD = 5;
+
 	let { folders = [], drawings = [], selectedFolderId = null, message = '' }: Props = $props();
 
-	let viewMode = $state<'grid' | 'list'>('grid');
+	let viewMode: 'grid' | 'list' = $state('grid');
 	let selectedIds = new SvelteSet<number>();
+	let preSelectedIds = new SvelteSet<number>();
 	let isDragging = $state(false);
-	let selectionRect = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+	let hasMovedEnough = $state(false);
+	let selectionRect: { x: number; y: number; w: number; h: number } | null = $state(null);
 	let areaEl: HTMLElement | null = $state(null);
 	let dragStart = $state({ x: 0, y: 0 });
-	let lastClickedId = $state<number | null>(null);
+	let lastClickedId: number | null = $state(null);
 	let sidebarOpen = $state(true);
 
-	let contextMenu = $state<{ x: number; y: number; drawingId: number; title: string } | null>(null);
+	let contextMenu: ContextMenuState | null = $state(null);
 	let moveFolderOpen = $state(false);
+	let moveTargetId: number | null = $state(null);
+	let removeFolderOpen = $state(false);
+	let dragJustEnded = $state(false);
 
 	const selectedCount = $derived(selectedIds.size);
+
+	function clampToViewport(x: number, y: number, menuW = 160, menuH = 120) {
+		return {
+			x: Math.max(0, Math.min(x, window.innerWidth - menuW)),
+			y: Math.max(0, Math.min(y, window.innerHeight - menuH))
+		};
+	}
 
 	function getFolderName(folderId: number | null) {
 		if (folderId === null) return '—';
 		return folders.find((f) => f.id === folderId)?.name ?? '—';
+	}
+
+	function getFolderDrawingCount(folderId: number) {
+		return drawings.filter((d) => d.folderId === folderId).length;
 	}
 
 	function toggleSelection(itemId: number, ctrl: boolean, shift: boolean) {
@@ -67,49 +94,58 @@
 
 	function handleMouseDown(e: MouseEvent) {
 		const target = e.target as HTMLElement;
-		if (target.closest('a') || target.closest('button') || target.closest('input')) return;
+		if (target.closest('a') || target.closest('input')) return;
+		const isDrawingEl = target.closest('[data-drawing-id]');
+		if (!isDrawingEl && target.closest('button')) return;
 		if (!areaEl) return;
+
+		e.preventDefault();
 
 		const rect = areaEl.getBoundingClientRect();
 		dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 		isDragging = true;
-		selectionRect = { x: dragStart.x, y: dragStart.y, w: 0, h: 0 };
+		hasMovedEnough = false;
+		dragJustEnded = false;
+		preSelectedIds.clear();
 
-		if (!e.ctrlKey && !e.shiftKey) {
-			selectedIds.clear();
-		}
+		const onMouseMove = (ev: MouseEvent) => {
+			if (!areaEl) return;
+			const r = areaEl.getBoundingClientRect();
+			const cx = ev.clientX - r.left;
+			const cy = ev.clientY - r.top;
+			const dx = Math.abs(cx - dragStart.x);
+			const dy = Math.abs(cy - dragStart.y);
+
+			if (!hasMovedEnough && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+				hasMovedEnough = true;
+				if (!e.ctrlKey && !e.shiftKey) selectedIds.clear();
+			}
+
+			if (hasMovedEnough) {
+				selectionRect = {
+					x: Math.min(dragStart.x, cx),
+					y: Math.min(dragStart.y, cy),
+					w: dx,
+					h: dy
+				};
+				updatePreSelection(selectionRect);
+			}
+		};
 
 		const onMouseUp = () => {
 			handleMouseUp();
+			window.removeEventListener('mousemove', onMouseMove);
 			window.removeEventListener('mouseup', onMouseUp);
 		};
+
+		window.addEventListener('mousemove', onMouseMove);
 		window.addEventListener('mouseup', onMouseUp);
 	}
 
-	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging || !areaEl) return;
-
-		const rect = areaEl.getBoundingClientRect();
-		const cx = e.clientX - rect.left;
-		const cy = e.clientY - rect.top;
-
-		selectionRect = {
-			x: Math.min(dragStart.x, cx),
-			y: Math.min(dragStart.y, cy),
-			w: Math.abs(cx - dragStart.x),
-			h: Math.abs(cy - dragStart.y)
-		};
-	}
-
-	function handleMouseUp() {
-		if (!isDragging || !selectionRect || !areaEl) {
-			isDragging = false;
-			selectionRect = null;
-			return;
-		}
-
+	function updatePreSelection(sr: { x: number; y: number; w: number; h: number }) {
+		if (!areaEl) return;
+		preSelectedIds.clear();
 		const items = areaEl.querySelectorAll('[data-drawing-id]');
-		const sr = selectionRect;
 		const areaRect = areaEl.getBoundingClientRect();
 
 		items.forEach((el) => {
@@ -123,9 +159,24 @@
 
 			if (intersects) {
 				const drawingId = Number(el.getAttribute('data-drawing-id'));
-				selectedIds.add(drawingId);
+				preSelectedIds.add(drawingId);
 			}
 		});
+	}
+
+	function handleMouseUp() {
+		if (!hasMovedEnough) {
+			isDragging = false;
+			selectionRect = null;
+			preSelectedIds.clear();
+			return;
+		}
+
+		dragJustEnded = true;
+		for (const id of preSelectedIds) {
+			selectedIds.add(id);
+		}
+		preSelectedIds.clear();
 		isDragging = false;
 		selectionRect = null;
 	}
@@ -139,6 +190,8 @@
 			const target = e.target as HTMLElement;
 			if (contextMenu && !target.closest('.context-menu')) {
 				contextMenu = null;
+				moveTargetId = null;
+				removeFolderOpen = false;
 			}
 			if (moveFolderOpen && !target.closest('.move-folder-wrap')) {
 				moveFolderOpen = false;
@@ -148,18 +201,52 @@
 		return () => window.removeEventListener('click', onAnyClick);
 	});
 
-	function openContext(e: MouseEvent, d: DrawingItem) {
+	function openDrawingMenu(e: MouseEvent, d: DrawingItem) {
 		e.preventDefault();
-		const menuW = 160;
-		const menuH = 120;
-		const x = Math.min(e.clientX, window.innerWidth - menuW);
-		const y = Math.min(e.clientY, window.innerHeight - menuH);
-		contextMenu = { x: Math.max(0, x), y: Math.max(0, y), drawingId: d.id, title: d.title };
+		e.stopPropagation();
+		moveTargetId = null;
+		const pos = clampToViewport(e.clientX, e.clientY);
+		contextMenu = { ...pos, type: 'drawing', id: d.id, title: d.title };
+	}
+
+	function openFolderMenu(e: MouseEvent, f: FolderItem) {
+		e.preventDefault();
+		e.stopPropagation();
+		const pos = clampToViewport(e.clientX, e.clientY);
+		contextMenu = { ...pos, type: 'folder', id: f.id, title: f.name };
+	}
+
+	function openDashboardMenu(e: MouseEvent) {
+		e.preventDefault();
+		const pos = clampToViewport(e.clientX, e.clientY, 180, 50);
+		contextMenu = { ...pos, type: 'dashboard' };
+	}
+
+	function openSidebarMenu(e: MouseEvent) {
+		e.preventDefault();
+		removeFolderOpen = false;
+		const pos = clampToViewport(e.clientX, e.clientY, 200, 80);
+		const folder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : null;
+		contextMenu = {
+			...pos,
+			type: 'sidebar',
+			id: folder?.id,
+			title: folder?.name
+		};
 	}
 
 	async function deleteSelected() {
 		if (selectedIds.size === 0) return;
-		if (!confirm(`Delete ${selectedIds.size} drawing(s)?`)) return;
+		let msg: string;
+		if (selectedIds.size === 1) {
+			const id = [...selectedIds][0];
+			const drawing = drawings.find((d) => d.id === id);
+			msg = `Delete "${drawing?.title ?? 'Untitled'}"?`;
+		} else {
+			msg = `Delete ${selectedIds.size} drawing(s)?`;
+		}
+
+		if (!confirm(msg)) return;
 
 		for (const id of selectedIds) {
 			await fetch(resolve(`/draw/${id}`), { method: 'DELETE' }).catch(() => {});
@@ -178,10 +265,72 @@
 		window.location.reload();
 	}
 
+	async function moveDrawingToFolder(drawingId: number, folderId: number | null) {
+		await fetch(resolve(`/draw/${drawingId}`), {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ folderId })
+		})
+			.then(() => window.location.reload())
+			.catch(() => {});
+	}
+
 	async function deleteDrawing(id: number) {
-		if (!confirm('Delete this drawing?')) return;
+		const drawing = drawings.find((d) => d.id === id);
+		if (!confirm(`Delete "${drawing?.title ?? 'Untitled'}"?`)) return;
 		await fetch(resolve(`/draw/${id}`), { method: 'DELETE' }).catch(() => {});
 		window.location.reload();
+	}
+
+	async function renameFolder(id: number, newName: string) {
+		await fetch(resolve(`/folders/${id}`), {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name: newName })
+		})
+			.then(() => window.location.reload())
+			.catch(() => {});
+	}
+
+	async function deleteFolder(id: number, name: string) {
+		const count = getFolderDrawingCount(id);
+		let msg = `Delete folder "${name}"?`;
+		if (count > 0) {
+			msg += ` It contains ${count} drawing${count !== 1 ? 's' : ''} that will also be removed.`;
+		}
+		if (!confirm(msg)) return;
+		await fetch(resolve(`/folders/${id}`), { method: 'DELETE' })
+			.then(() => window.location.reload())
+			.catch(() => {});
+	}
+
+	async function createNewDrawing() {
+		const title = prompt('Drawing title:', 'Untitled');
+		if (!title) return;
+		const body: { title: string; folderId?: number } = { title };
+		if (selectedFolderId != null) body.folderId = selectedFolderId;
+		await fetch(resolve('/draw'), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
+		})
+			.then((r) => r.json())
+			.then((d) => {
+				window.location.href = resolve(`/draw/${d.id}`);
+			})
+			.catch(() => {});
+	}
+
+	async function createNewFolder() {
+		const name = prompt('Folder name:');
+		if (!name) return;
+		await fetch(resolve('/folders'), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name })
+		})
+			.then(() => window.location.reload())
+			.catch(() => {});
 	}
 </script>
 
@@ -198,17 +347,60 @@
 			</button>
 		</div>
 		{#if sidebarOpen}
-			<nav class="folder-list">
-				<a href={resolve('/')} class:active={selectedFolderId === null} class="folder-item">
-					All drawings
-				</a>
+			<a href={resolve('/')} class:active={selectedFolderId === null} class="sidebar-all-link">
+				All drawings
+			</a>
+			<nav class="folder-list" oncontextmenu={(e) => openSidebarMenu(e)}>
 				{#each folders as f (f.id)}
 					<a
 						href={resolve(`/?folder=${f.id}`)}
 						class:active={selectedFolderId === f.id}
 						class="folder-item"
+						oncontextmenu={(e) => openFolderMenu(e, f)}
 					>
-						{f.name}
+						<span class="folder-item-name">{f.name}</span>
+						<button
+							class="folder-trash"
+							onclick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								deleteFolder(f.id, f.name);
+							}}
+							aria-label="Delete folder"
+						>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								fill="none"
+								xmlns="http://www.w3.org/2000/svg"
+							>
+								<path d="M5 7.5H19L18 21H6L5 7.5Z" stroke="currentColor" stroke-linejoin="round" />
+								<path
+									d="M15.5 9.5L15 19"
+									stroke="currentColor"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M12 9.5V19"
+									stroke="currentColor"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M8.5 9.5L9 19"
+									stroke="currentColor"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M16 5H19C20.1046 5 21 5.89543 21 7V7.5H3V7C3 5.89543 3.89543 5 5 5H8M16 5L15 3H9L8 5M16 5H8"
+									stroke="currentColor"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</button>
 					</a>
 				{/each}
 			</nav>
@@ -219,7 +411,7 @@
 		{/if}
 	</aside>
 
-	<main class="dashboard-main">
+	<main class="dashboard-main" oncontextmenu={(e) => openDashboardMenu(e)}>
 		<div class="dashboard-header">
 			<h2>
 				{selectedFolderId
@@ -232,7 +424,7 @@
 					<button class="btn btn-danger" onclick={deleteSelected}>Delete</button>
 					<div class="move-folder-wrap">
 						<button class="btn btn-secondary" onclick={() => (moveFolderOpen = !moveFolderOpen)}>
-							Move to...
+							Move to folder
 						</button>
 						{#if moveFolderOpen}
 							<div class="folder-dropdown">
@@ -260,7 +452,6 @@
 							</div>
 						{/if}
 					</div>
-					<button class="btn btn-secondary" onclick={clearSelection}>Clear</button>
 				{:else}
 					<div class="view-toggle">
 						<div class="pill-bg" class:right={viewMode === 'list'}></div>
@@ -279,7 +470,7 @@
 							List
 						</button>
 					</div>
-					<a href={resolve('/draw')} class="btn btn-primary">New drawing</a>
+					<button class="btn btn-primary" onclick={createNewDrawing}>New drawing</button>
 				{/if}
 			</div>
 		</div>
@@ -292,8 +483,19 @@
 		<div
 			class="drawings-area"
 			bind:this={areaEl}
-			onmousemove={handleMouseMove}
 			onmousedown={handleMouseDown}
+			onclick={(e) => {
+				if (dragJustEnded) {
+					dragJustEnded = false;
+					return;
+				}
+				if (selectedIds.size > 0 && !(e.target as HTMLElement).closest('[data-drawing-id]')) {
+					clearSelection();
+				}
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Escape' || e.key === 'Enter') clearSelection();
+			}}
 			role="application"
 			aria-label="Drawings selection area"
 			tabindex="-1"
@@ -304,18 +506,24 @@
 						<button
 							class="drawing-card"
 							class:selected={selectedIds.has(d.id)}
+							class:pre-selected={preSelectedIds.has(d.id)}
 							data-drawing-id={d.id}
 							onclick={(e) => {
 								e.preventDefault();
-								toggleSelection(d.id, e.ctrlKey, e.shiftKey);
-							}}
-							ondblclick={() => {
-								window.location.href = resolve(`/draw/${d.id}`);
+								if (dragJustEnded) {
+									dragJustEnded = false;
+									return;
+								}
+								if (e.ctrlKey || e.shiftKey) {
+									toggleSelection(d.id, e.ctrlKey, e.shiftKey);
+								} else {
+									window.location.href = resolve(`/draw/${d.id}`);
+								}
 							}}
 							onkeydown={(e) => {
 								if (e.key === 'Enter') window.location.href = resolve(`/draw/${d.id}`);
 							}}
-							oncontextmenu={(e) => openContext(e, d)}
+							oncontextmenu={(e) => openDrawingMenu(e, d)}
 						>
 							<div class="drawing-preview">
 								<span class="drawing-icon">&#9998;</span>
@@ -340,18 +548,24 @@
 						<button
 							class="list-row"
 							class:selected={selectedIds.has(d.id)}
+							class:pre-selected={preSelectedIds.has(d.id)}
 							data-drawing-id={d.id}
 							onclick={(e) => {
 								e.preventDefault();
-								toggleSelection(d.id, e.ctrlKey, e.shiftKey);
-							}}
-							ondblclick={() => {
-								window.location.href = resolve(`/draw/${d.id}`);
+								if (dragJustEnded) {
+									dragJustEnded = false;
+									return;
+								}
+								if (e.ctrlKey || e.shiftKey) {
+									toggleSelection(d.id, e.ctrlKey, e.shiftKey);
+								} else {
+									window.location.href = resolve(`/draw/${d.id}`);
+								}
 							}}
 							onkeydown={(e) => {
 								if (e.key === 'Enter') window.location.href = resolve(`/draw/${d.id}`);
 							}}
-							oncontextmenu={(e) => openContext(e, d)}
+							oncontextmenu={(e) => openDrawingMenu(e, d)}
 						>
 							<span class="col-name">{d.title}</span>
 							<span class="col-folder">{getFolderName(d.folderId)}</span>
@@ -369,7 +583,7 @@
 				</div>
 			{/if}
 
-			{#if isDragging && selectionRect}
+			{#if isDragging && hasMovedEnough && selectionRect}
 				<div
 					class="selection-rect"
 					style="left: {selectionRect.x}px; top: {selectionRect.y}px; width: {selectionRect.w}px; height: {selectionRect.h}px;"
@@ -381,38 +595,185 @@
 
 {#if contextMenu}
 	<div class="context-menu" style="left: {contextMenu.x}px; top: {contextMenu.y}px;" role="menu">
-		<a href={resolve(`/draw/${contextMenu.drawingId}`)} class="context-item" role="menuitem">Open</a>
-		<button
-			class="context-item"
-			role="menuitem"
-			onclick={() => {
-				const ctx = contextMenu!;
-				const newTitle = prompt('Rename drawing:', ctx.title);
-				if (newTitle && newTitle !== ctx.title) {
-					fetch(resolve(`/draw/${ctx.drawingId}`), {
-						method: 'PUT',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ title: newTitle })
-					})
-						.then(() => window.location.reload())
-						.catch(() => {});
-				}
-				contextMenu = null;
-			}}
-		>
-			Rename
-		</button>
-		<button
-			class="context-item context-danger"
-			role="menuitem"
-			onclick={() => {
-				const ctx = contextMenu!;
-				deleteDrawing(ctx.drawingId);
-				contextMenu = null;
-			}}
-		>
-			Delete
-		</button>
+		{#if contextMenu.type === 'drawing'}
+			<a href={resolve(`/draw/${contextMenu.id}`)} class="context-item" role="menuitem"> Open </a>
+			<button
+				class="context-item"
+				role="menuitem"
+				onclick={() => {
+					const ctx = contextMenu!;
+					if (ctx.type !== 'drawing') return;
+					const newTitle = prompt('Rename drawing:', ctx.title);
+					if (newTitle && newTitle !== ctx.title) {
+						fetch(resolve(`/draw/${ctx.id}`), {
+							method: 'PUT',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ title: newTitle })
+						})
+							.then(() => window.location.reload())
+							.catch(() => {});
+					}
+					contextMenu = null;
+				}}
+			>
+				Rename
+			</button>
+			<button
+				class="context-item"
+				role="menuitem"
+				onclick={() => {
+					const ctx = contextMenu!;
+					if (ctx.type !== 'drawing') return;
+					moveTargetId = moveTargetId === ctx.id ? null : ctx.id!;
+				}}
+			>
+				Move to...
+			</button>
+			{#if moveTargetId === contextMenu.id}
+				<div class="context-menu-sub">
+					{#each folders as f (f.id)}
+						<button
+							class="context-item"
+							role="menuitem"
+							onclick={() => {
+								const ctx = contextMenu!;
+								if (ctx.type !== 'drawing') return;
+								moveDrawingToFolder(ctx.id!, f.id);
+								moveTargetId = null;
+								contextMenu = null;
+							}}
+						>
+							{f.name}
+						</button>
+					{/each}
+					<div class="context-menu-divider"></div>
+					<button
+						class="context-item"
+						role="menuitem"
+						onclick={() => {
+							const ctx = contextMenu!;
+							if (ctx.type !== 'drawing') return;
+							moveDrawingToFolder(ctx.id!, null);
+							moveTargetId = null;
+							contextMenu = null;
+						}}
+					>
+						No folder
+					</button>
+				</div>
+			{/if}
+			<div class="context-menu-divider"></div>
+			<button
+				class="context-item context-danger"
+				role="menuitem"
+				onclick={async () => {
+					const ctx = contextMenu!;
+					if (ctx.type !== 'drawing') return;
+					contextMenu = null;
+					// yield to let Svelte re-render (remove context menu) before blocking confirm()
+					await new Promise((r) => setTimeout(r, 0));
+					if (selectedIds.size > 0 && selectedIds.has(ctx.id!)) {
+						deleteSelected();
+					} else {
+						deleteDrawing(ctx.id!);
+					}
+				}}
+			>
+				Delete
+			</button>
+		{:else if contextMenu.type === 'folder'}
+			<button
+				class="context-item"
+				role="menuitem"
+				onclick={() => {
+					const ctx = contextMenu!;
+					if (ctx.type !== 'folder') return;
+					const newName = prompt('Rename folder:', ctx.title);
+					if (newName && newName !== ctx.title) {
+						renameFolder(ctx.id!, newName);
+					}
+					contextMenu = null;
+				}}
+			>
+				Rename
+			</button>
+			<button
+				class="context-item context-danger"
+				role="menuitem"
+				onclick={() => {
+					const ctx = contextMenu!;
+					if (ctx.type !== 'folder') return;
+					deleteFolder(ctx.id!, ctx.title ?? '');
+					contextMenu = null;
+				}}
+			>
+				Delete
+			</button>
+		{:else if contextMenu.type === 'dashboard'}
+			<button
+				class="context-item"
+				role="menuitem"
+				onclick={() => {
+					contextMenu = null;
+					createNewDrawing();
+				}}
+			>
+				New drawing
+			</button>
+		{:else if contextMenu.type === 'sidebar'}
+			<button
+				class="context-item"
+				role="menuitem"
+				onclick={() => {
+					contextMenu = null;
+					createNewFolder();
+				}}
+			>
+				New folder
+			</button>
+			<div class="context-menu-divider"></div>
+			{#if contextMenu.id}
+				<button
+					class="context-item context-danger"
+					role="menuitem"
+					onclick={() => {
+						const ctx = contextMenu!;
+						if (ctx.type !== 'sidebar') return;
+						deleteFolder(ctx.id!, ctx.title ?? '');
+						contextMenu = null;
+					}}
+				>
+					Remove folder
+				</button>
+			{:else}
+				<button
+					class="context-item context-danger"
+					role="menuitem"
+					onclick={() => {
+						removeFolderOpen = !removeFolderOpen;
+					}}
+				>
+					Remove folder...
+				</button>
+				{#if removeFolderOpen}
+					<div class="context-menu-sub">
+						{#each folders as f (f.id)}
+							<button
+								class="context-item context-danger"
+								role="menuitem"
+								onclick={() => {
+									deleteFolder(f.id, f.name);
+									contextMenu = null;
+									removeFolderOpen = false;
+								}}
+							>
+								{f.name}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			{/if}
+		{/if}
 	</div>
 {/if}
 
@@ -477,6 +838,28 @@
 		}
 	}
 
+	.sidebar-all-link {
+		display: flex;
+		align-items: center;
+		padding: 0.4rem 0.6rem;
+		border-radius: 6px;
+		font-size: 0.85rem;
+		color: var(--text-primary);
+		font-weight: 500;
+		transition: background-color 0.15s;
+		text-decoration: none;
+		margin-bottom: 0.5rem;
+
+		&:hover {
+			background-color: var(--bg-hover);
+		}
+
+		&.active {
+			background-color: var(--accent);
+			color: white;
+		}
+	}
+
 	.folder-list {
 		display: flex;
 		flex-direction: column;
@@ -484,11 +867,15 @@
 	}
 
 	.folder-item {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 		padding: 0.4rem 0.6rem;
 		border-radius: 6px;
 		font-size: 0.85rem;
 		color: var(--text-muted);
 		transition: background-color 0.15s;
+		text-decoration: none;
 
 		&:hover {
 			background-color: var(--bg-hover);
@@ -498,6 +885,49 @@
 		&.active {
 			background-color: var(--accent);
 			color: white;
+		}
+	}
+
+	.folder-item-name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.folder-trash {
+		opacity: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.1rem 0.2rem;
+		border-radius: 3px;
+		transition:
+			opacity 0.15s,
+			color 0.15s,
+			background-color 0.15s;
+		flex-shrink: 0;
+		line-height: 1;
+		color: var(--text-muted);
+
+		.folder-item:hover & {
+			opacity: 1;
+		}
+
+		&:hover {
+			color: var(--danger);
+			background-color: rgba(224, 108, 108, 0.15);
+		}
+
+		.folder-item.active & {
+			opacity: 1;
+			color: #f28b8b;
+
+			&:hover {
+				color: #ff6b6b;
+				background-color: rgba(255, 107, 107, 0.2);
+			}
 		}
 	}
 
@@ -524,6 +954,8 @@
 		overflow-y: auto;
 		padding: 1.5rem;
 		user-select: none;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.dashboard-header {
@@ -648,6 +1080,8 @@
 
 	.drawings-area {
 		position: relative;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.drawings-grid {
@@ -676,6 +1110,11 @@
 		&.selected {
 			border-color: var(--accent);
 			box-shadow: 0 0 0 1px var(--accent);
+		}
+
+		&.pre-selected {
+			border-color: rgba(105, 101, 219, 0.4);
+			box-shadow: 0 0 0 1px rgba(105, 101, 219, 0.3);
 		}
 	}
 
@@ -764,6 +1203,10 @@
 		&.selected {
 			background-color: rgba(105, 101, 219, 0.15);
 		}
+
+		&.pre-selected {
+			background-color: rgba(105, 101, 219, 0.08);
+		}
 	}
 
 	.col-name {
@@ -834,5 +1277,18 @@
 		&:hover {
 			background-color: rgba(224, 108, 108, 0.15);
 		}
+	}
+
+	.context-menu-divider {
+		height: 1px;
+		background-color: var(--border);
+		margin: 0.25rem 0;
+	}
+
+	.context-menu-sub {
+		padding-left: 0.75rem;
+		border-left: 2px solid var(--border);
+		margin-left: 0.5rem;
+		margin-bottom: 0.25rem;
 	}
 </style>

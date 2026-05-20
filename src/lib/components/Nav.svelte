@@ -13,7 +13,6 @@
 	<div class="nav-left">
 		<a href={resolve('/')} class="logo">Excalidraw App</a>
 		<a href={resolve('/draw')} class="nav-link">Draw</a>
-		<a href={resolve('/about')} class="nav-link">About</a>
 	</div>
 	<div class="nav-right">
 		{#if user}

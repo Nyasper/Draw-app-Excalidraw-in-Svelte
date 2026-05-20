@@ -43,6 +43,7 @@
 	{#if showFooter}
 		<footer class="app-footer">
 			<span>&copy; {new Date().getFullYear()} Nyasper — Svelte Excalidraw App</span>
+			<a href={resolve('/about')} class="footer-link">Read about this project</a>
 		</footer>
 	{/if}
 </div>
@@ -105,5 +106,18 @@
 		color: var(--text-muted);
 		border-top: 1px solid var(--border);
 		flex-shrink: 0;
+		display: flex;
+		justify-content: center;
+		gap: 1rem;
+		align-items: center;
+	}
+
+	.footer-link {
+		color: var(--accent);
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 </style>

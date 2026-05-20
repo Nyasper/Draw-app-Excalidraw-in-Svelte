@@ -10,10 +10,13 @@ export const POST: RequestHandler = async (event) => {
 
 	const body = await event.request.json();
 	const title = body.title?.toString() ?? 'Untitled';
+	const folderId = body.folderId != null ? Number(body.folderId) : undefined;
 	const { elements, appState, files } = body;
 
-	const drawing = await createDrawing(user.id, title);
-	await updateDrawing(drawing.id, { elements, appState, files });
+	const drawing = await createDrawing(user.id, title, folderId);
+	if (elements || appState || files) {
+		await updateDrawing(drawing.id, { elements, appState, files });
+	}
 
 	return json({ id: drawing.id }, { status: 201 });
 };

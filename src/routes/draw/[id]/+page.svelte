@@ -20,6 +20,10 @@
 
 	const drawingId = $derived(data.drawing.id);
 
+	const backUrl = $derived(
+		data.drawing.folderId ? resolve(`/?folder=${data.drawing.folderId}`) : resolve('/')
+	);
+
 	const initialData = $derived<ExcalidrawInitialDataState | null>(
 		data.drawing.elements
 			? ({
@@ -95,7 +99,7 @@
 
 <div class="canvas-page">
 	<div class="canvas-toolbar">
-		<a href={resolve('/')} class="btn btn-secondary back-btn">&larr; Back</a>
+		<a href={backUrl} class="btn btn-secondary back-btn">&larr; Back</a>
 
 		<input class="title-input" type="text" bind:value={title} placeholder="Untitled" />
 		<div class="save-area">
