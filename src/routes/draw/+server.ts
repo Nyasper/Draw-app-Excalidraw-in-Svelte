@@ -15,7 +15,7 @@ export const POST: RequestHandler = async (event) => {
 
 	const drawing = await createDrawing(user.id, title, folderId);
 	if (elements || appState || files) {
-		await updateDrawing(drawing.id, { elements, appState, files });
+		await updateDrawing(drawing.id, user.id, { elements, appState, files });
 	}
 
 	return json({ id: drawing.id }, { status: 201 });

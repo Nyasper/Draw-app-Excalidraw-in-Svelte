@@ -14,8 +14,8 @@
 	let { data }: PageProps = $props();
 
 	let excalidrawAPI: ExcalidrawImperativeAPI | null = $state(null);
-	let title = $state(data.drawing.title);
-	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let title = $derived(data.drawing.title);
+	let saveStatus: 'idle' | 'saving' | 'saved' | 'error' = $state('idle');
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const drawingId = $derived(data.drawing.id);

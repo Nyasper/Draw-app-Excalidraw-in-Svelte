@@ -15,7 +15,7 @@
 
 	let excalidrawAPI: ExcalidrawImperativeAPI | null = $state(null);
 	let title = $state('Untitled');
-	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let saveStatus: 'idle' | 'saving' | 'saved' | 'error' = $state('idle');
 	let drawingId: number | null = $state(null);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 

@@ -10,11 +10,14 @@
 | --------------------- | -------------------------------------------------------------------------- |
 | `bun run dev`         | Start Vite dev server (port 5173)                                          |
 | `bun run build`       | Production build                                                           |
+| `bun run preview`     | Preview production build                                                   |
 | `bun run check`       | Type-check (runs `svelte-kit sync` then `svelte-check`)                    |
+| `bun run check:watch` | Type-check in watch mode                                                   |
 | `bun run lint`        | Lint + format check (`prettier --check . && eslint .`)                     |
 | `bun run format`      | Auto-format with Prettier                                                  |
 | `bun run db:start`    | Start PostgreSQL 18 via Docker Compose                                     |
 | `bun run db:push`     | Push Drizzle schema directly to DB (no migration files)                    |
+| `bun run db:studio`   | Open Drizzle Studio                                                        |
 | `bun run db:generate` | Generate Drizzle migration files                                           |
 | `bun run db:migrate`  | Apply Drizzle migrations                                                   |
 | `bun run auth:schema` | Generate Better Auth schema tables into `src/lib/server/db/auth.schema.ts` |
@@ -36,7 +39,6 @@ src/
   hooks.server.ts            Better Auth session hook + svelteKitHandler
   lib/
     assets/favicon.svg
-    index.ts
     components/
       Excalidraw.svelte       Core: wraps React Excalidraw via {@attach} + $effect()
       Nav.svelte              Top navigation bar (auth-aware)
@@ -75,8 +77,13 @@ src/
         +page.svelte          Canvas for existing drawing (loads from DB)
         +page.server.ts       Load drawing by ID
         +server.ts            PUT: update drawing, DELETE: remove drawing
+    profile/
+      +page.svelte            User profile: stats (drawings/folders count) + change password form
+      +page.server.ts         Load user stats; changePassword action
     folders/
       +server.ts              GET/POST: list and create folders
+      [id]/
+        +server.ts            PUT: rename folder, DELETE: remove folder
 ```
 
 ## Data model

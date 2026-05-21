@@ -47,8 +47,6 @@
 	let areaEl: HTMLElement | null = $state(null);
 	let dragStart = $state({ x: 0, y: 0 });
 	let lastClickedId: number | null = $state(null);
-	let sidebarOpen = $state(true);
-
 	let contextMenu: ContextMenuState | null = $state(null);
 	let moveFolderOpen = $state(false);
 	let moveTargetId: number | null = $state(null);
@@ -335,80 +333,69 @@
 </script>
 
 <div class="dashboard">
-	<aside class="sidebar" class:collapsed={!sidebarOpen}>
-		<div class="sidebar-header">
-			<h2 class:hidden={!sidebarOpen}>Folders</h2>
-			<button
-				class="sidebar-toggle"
-				onclick={() => (sidebarOpen = !sidebarOpen)}
-				aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-			>
-				{sidebarOpen ? '\u00AB' : '\u00BB'}
-			</button>
-		</div>
-		{#if sidebarOpen}
-			<a href={resolve('/')} class:active={selectedFolderId === null} class="sidebar-all-link">
-				All drawings
-			</a>
-			<nav class="folder-list" oncontextmenu={(e) => openSidebarMenu(e)}>
-				{#each folders as f (f.id)}
-					<a
-						href={resolve(`/?folder=${f.id}`)}
-						class:active={selectedFolderId === f.id}
-						class="folder-item"
-						oncontextmenu={(e) => openFolderMenu(e, f)}
+	<aside class="sidebar">
+		<a href={resolve('/')} class:active={selectedFolderId === null} class="sidebar-all-link">
+			All drawings
+		</a>
+		<h2 class="folders-heading">Folders</h2>
+		<nav class="folder-list" oncontextmenu={(e) => openSidebarMenu(e)}>
+			{#each folders as f (f.id)}
+				<a
+					href={resolve(`/?folder=${f.id}`)}
+					class:active={selectedFolderId === f.id}
+					class="folder-item"
+					oncontextmenu={(e) => openFolderMenu(e, f)}
+				>
+					<span class="folder-item-name">{f.name}</span>
+					<button
+						class="folder-trash"
+						onclick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							deleteFolder(f.id, f.name);
+						}}
+						aria-label="Delete folder"
 					>
-						<span class="folder-item-name">{f.name}</span>
-						<button
-							class="folder-trash"
-							onclick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								deleteFolder(f.id, f.name);
-							}}
-							aria-label="Delete folder"
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
 						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path d="M5 7.5H19L18 21H6L5 7.5Z" stroke="currentColor" stroke-linejoin="round" />
-								<path
-									d="M15.5 9.5L15 19"
-									stroke="currentColor"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								<path
-									d="M12 9.5V19"
-									stroke="currentColor"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								<path
-									d="M8.5 9.5L9 19"
-									stroke="currentColor"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								<path
-									d="M16 5H19C20.1046 5 21 5.89543 21 7V7.5H3V7C3 5.89543 3.89543 5 5 5H8M16 5L15 3H9L8 5M16 5H8"
-									stroke="currentColor"
-									stroke-linejoin="round"
-								/>
-							</svg>
-						</button>
-					</a>
-				{/each}
-			</nav>
-			<form method="post" action="?/createFolder" use:enhance class="new-folder-form">
-				<input type="text" name="folderName" placeholder="New folder..." required />
-				<button class="btn btn-primary" type="submit">+</button>
-			</form>
-		{/if}
+							<path d="M5 7.5H19L18 21H6L5 7.5Z" stroke="currentColor" stroke-linejoin="round" />
+							<path
+								d="M15.5 9.5L15 19"
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<path
+								d="M12 9.5V19"
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<path
+								d="M8.5 9.5L9 19"
+								stroke="currentColor"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<path
+								d="M16 5H19C20.1046 5 21 5.89543 21 7V7.5H3V7C3 5.89543 3.89543 5 5 5H8M16 5L15 3H9L8 5M16 5H8"
+								stroke="currentColor"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					</button>
+				</a>
+			{/each}
+		</nav>
+		<form method="post" action="?/createFolder" use:enhance class="new-folder-form">
+			<input type="text" name="folderName" placeholder="New folder..." required />
+			<button class="btn btn-primary" type="submit">+</button>
+		</form>
 	</aside>
 
 	<main class="dashboard-main" oncontextmenu={(e) => openDashboardMenu(e)}>
@@ -428,6 +415,16 @@
 						</button>
 						{#if moveFolderOpen}
 							<div class="folder-dropdown">
+								<button
+									class="folder-dropdown-item"
+									onclick={() => {
+										moveSelectedToFolder(null);
+										moveFolderOpen = false;
+									}}
+								>
+									All drawings
+								</button>
+								<div class="folder-dropdown-divider"></div>
 								{#each folders as f (f.id)}
 									<button
 										class="folder-dropdown-item"
@@ -439,16 +436,6 @@
 										{f.name}
 									</button>
 								{/each}
-								<div class="folder-dropdown-divider"></div>
-								<button
-									class="folder-dropdown-item"
-									onclick={() => {
-										moveSelectedToFolder(null);
-										moveFolderOpen = false;
-									}}
-								>
-									No folder
-								</button>
 							</div>
 						{/if}
 					</div>
@@ -631,6 +618,20 @@
 			</button>
 			{#if moveTargetId === contextMenu.id}
 				<div class="context-menu-sub">
+					<button
+						class="context-item"
+						role="menuitem"
+						onclick={() => {
+							const ctx = contextMenu!;
+							if (ctx.type !== 'drawing') return;
+							moveDrawingToFolder(ctx.id!, null);
+							moveTargetId = null;
+							contextMenu = null;
+						}}
+					>
+						All drawings
+					</button>
+					<div class="context-menu-divider"></div>
 					{#each folders as f (f.id)}
 						<button
 							class="context-item"
@@ -646,20 +647,6 @@
 							{f.name}
 						</button>
 					{/each}
-					<div class="context-menu-divider"></div>
-					<button
-						class="context-item"
-						role="menuitem"
-						onclick={() => {
-							const ctx = contextMenu!;
-							if (ctx.type !== 'drawing') return;
-							moveDrawingToFolder(ctx.id!, null);
-							moveTargetId = null;
-							contextMenu = null;
-						}}
-					>
-						No folder
-					</button>
 				</div>
 			{/if}
 			<div class="context-menu-divider"></div>
@@ -793,49 +780,7 @@
 		padding: 1rem;
 		gap: 0.75rem;
 		flex-shrink: 0;
-		transition: width 0.2s;
 		overflow: hidden;
-
-		&.collapsed {
-			width: 44px;
-			padding: 0.5rem;
-		}
-	}
-
-	.sidebar-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		flex-shrink: 0;
-
-		h2 {
-			font-size: 0.8rem;
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			color: var(--text-muted);
-			white-space: nowrap;
-			overflow: hidden;
-
-			&.hidden {
-				opacity: 0;
-				pointer-events: none;
-			}
-		}
-	}
-
-	.sidebar-toggle {
-		background: none;
-		border: none;
-		color: var(--text-muted);
-		font-size: 1rem;
-		padding: 0.2rem 0.4rem;
-		border-radius: 4px;
-		flex-shrink: 0;
-
-		&:hover {
-			background-color: var(--bg-hover);
-			color: var(--text-primary);
-		}
 	}
 
 	.sidebar-all-link {
@@ -858,6 +803,16 @@
 			background-color: var(--accent);
 			color: white;
 		}
+	}
+
+	.folders-heading {
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		margin: 0.5rem 0 0.25rem;
 	}
 
 	.folder-list {

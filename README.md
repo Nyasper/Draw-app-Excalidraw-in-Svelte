@@ -8,25 +8,31 @@ A full-stack application that wraps the React-based [@excalidraw/excalidraw](htt
 
 ### English
 
-This project was created for two main reasons:
+This project was created for three main reasons:
 
-**1. Prove that React libraries can run inside Svelte.**  
-The core idea is to demonstrate that it's entirely possible to embed a React component — even a complex one like Excalidraw — inside a Svelte application. By initializing the React component within a Svelte 5 `$effect()` (via the `@attach` directive), we bridge the two frameworks seamlessly. React becomes just another rendering target, while Svelte handles routing, server logic, state management, and the overall architecture.
+**1. My first project using agentic AI.**  
+This is my first time building a real-world product end-to-end by myself, using agentic AI tools alongside all of my web development knowledge. The goal was to go beyond tutorials and side experiments — to ship something complete, with authentication, a database, email flows, and a polished UI. A production-grade application built from scratch.
 
 **2. Svelte is the framework I know best.**  
 I chose Svelte not because it's trendy, but because it's the framework I'm most comfortable with. I wanted to build something real and full-featured using the tools I understand deeply. Svelte 5's runes mode (`$state`, `$derived`, `$effect`), SvelteKit's file-based routing, and the clean separation between client and server make it an excellent choice for this kind of project.
+
+**3. It is possible to use React libraries inside Svelte.**  
+A technical bonus: this project demonstrates that it's entirely possible to embed a React component — even a complex one like Excalidraw — inside a Svelte application. By initializing the React component within a Svelte 5 `$effect()` (via the `@attach` directive), we bridge the two frameworks seamlessly. React becomes just another rendering target, while Svelte handles everything else.
 
 The result? A working Excalidraw clone with auth, database persistence, and folder management — all powered by Svelte, with React living quietly inside a single component.
 
 ### Español
 
-Este proyecto nació por dos razones principales:
+Este proyecto nació por tres razones principales:
 
-**1. Demostrar que es posible utilizar librerías de React dentro de Svelte.**  
-La idea central es probar que es completamente factible embeber un componente de React — incluso uno tan complejo como Excalidraw — dentro de una aplicación Svelte. Inicializando el componente de React dentro de un `$effect()` de Svelte 5 (a través de la directiva `@attach`), logramos conectar ambos frameworks de forma transparente. React se convierte simplemente en otro destino de renderizado, mientras que Svelte se encarga del routing, la lógica del servidor, la gestión de estado y toda la arquitectura.
+**1. Mi primer proyecto usando IA agéntica.**  
+Es la primera vez que construyo un producto real de principio a fin por mi cuenta, utilizando herramientas de IA agéntica junto con todo mi conocimiento en desarrollo web. El objetivo fue ir más allá de tutoriales y experimentos — lanzar algo completo, con autenticación, base de datos, flujos de correo y una interfaz pulida. Una aplicación de nivel producción construida desde cero.
 
 **2. Svelte es el framework que más domino.**  
 Elegí Svelte no porque esté de moda, sino porque es el framework con el que me siento más cómodo. Quería construir algo real y con todas sus funcionalidades usando las herramientas que entiendo a profundidad. El modo runes de Svelte 5 (`$state`, `$derived`, `$effect`), el routing basado en archivos de SvelteKit y la limpia separación entre cliente y servidor lo convierten en una excelente elección para este tipo de proyecto.
+
+**3. Es posible usar librerías de React dentro de Svelte.**  
+Un bonus técnico: este proyecto demuestra que es completamente factible embeber un componente de React — incluso uno tan complejo como Excalidraw — dentro de una aplicación Svelte. Inicializando el componente de React dentro de un `$effect()` de Svelte 5 (a través de la directiva `@attach`), logramos conectar ambos frameworks de forma transparente. React se convierte simplemente en otro destino de renderizado, mientras que Svelte se encarga de todo lo demás.
 
 El resultado: un clon funcional de Excalidraw con autenticación, persistencia en base de datos y organización por carpetas — todo impulsado por Svelte, con React viviendo tranquilamente dentro de un solo componente.
 

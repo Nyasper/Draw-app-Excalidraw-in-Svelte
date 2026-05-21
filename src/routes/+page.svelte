@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-	<title>Svelte Excalidraw App</title>
+	<title>DrawApp</title>
 </svelte:head>
 
 {#if data.user}
@@ -22,8 +22,8 @@
 		<div class="hero">
 			<h1>Draw freely. Save when ready.</h1>
 			<p>
-				A full-stack drawing app powered by Excalidraw, wrapped in Svelte. Draw instantly as a
-				guest, or create an account to save your work to the cloud.
+				A simple drawing app for your ideas. Start sketching right away, or create an account to
+				save your work and access it from anywhere.
 			</p>
 			<div class="hero-actions">
 				<a href={resolve('/draw')} class="btn btn-primary">Start drawing</a>
@@ -33,11 +33,11 @@
 		<div class="features">
 			<div class="feature">
 				<h3>Draw without limits</h3>
-				<p>Full Excalidraw canvas &mdash; shapes, freehand, arrows, text, and more.</p>
+				<p>Shapes, freehand, arrows, text, and more &mdash; everything you need to express your ideas.</p>
 			</div>
 			<div class="feature">
 				<h3>Save to the cloud</h3>
-				<p>Create an account and your drawings are persisted to PostgreSQL automatically.</p>
+				<p>Create an account and your drawings are saved automatically, accessible from any device.</p>
 			</div>
 			<div class="feature">
 				<h3>Organize with folders</h3>

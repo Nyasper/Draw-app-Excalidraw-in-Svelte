@@ -1,4 +1,4 @@
-import { eq, asc, and, count } from 'drizzle-orm';
+import { eq, asc, desc, and, count } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { folder, drawing } from '$lib/server/db/schema';
 
@@ -11,7 +11,7 @@ export async function getUserDrawings(userId: string) {
 		.select()
 		.from(drawing)
 		.where(eq(drawing.userId, userId))
-		.orderBy(asc(drawing.updatedAt));
+		.orderBy(desc(drawing.updatedAt));
 }
 
 export async function getFolderDrawings(userId: string, folderId: number) {
@@ -19,7 +19,7 @@ export async function getFolderDrawings(userId: string, folderId: number) {
 		.select()
 		.from(drawing)
 		.where(and(eq(drawing.userId, userId), eq(drawing.folderId, folderId)))
-		.orderBy(asc(drawing.updatedAt));
+		.orderBy(desc(drawing.updatedAt));
 }
 
 export async function createDrawing(userId: string, title: string, folderId?: number) {
@@ -32,6 +32,7 @@ export async function createDrawing(userId: string, title: string, folderId?: nu
 
 export async function updateDrawing(
 	id: number,
+	userId: string,
 	data: {
 		title?: string;
 		elements?: unknown;
@@ -40,12 +41,20 @@ export async function updateDrawing(
 		folderId?: number | null;
 	}
 ) {
-	const [row] = await db.update(drawing).set(data).where(eq(drawing.id, id)).returning();
-	return row;
+	const [row] = await db
+		.update(drawing)
+		.set(data)
+		.where(and(eq(drawing.id, id), eq(drawing.userId, userId)))
+		.returning();
+	return row ?? null;
 }
 
-export async function deleteDrawing(id: number) {
-	await db.delete(drawing).where(eq(drawing.id, id));
+export async function deleteDrawing(id: number, userId: string) {
+	const [row] = await db
+		.delete(drawing)
+		.where(and(eq(drawing.id, id), eq(drawing.userId, userId)))
+		.returning();
+	return row ?? null;
 }
 
 export async function createFolder(userId: string, name: string, parentFolderId?: number) {
@@ -56,13 +65,21 @@ export async function createFolder(userId: string, name: string, parentFolderId?
 	return row;
 }
 
-export async function renameFolder(id: number, name: string) {
-	const [row] = await db.update(folder).set({ name }).where(eq(folder.id, id)).returning();
-	return row;
+export async function renameFolder(id: number, userId: string, name: string) {
+	const [row] = await db
+		.update(folder)
+		.set({ name })
+		.where(and(eq(folder.id, id), eq(folder.userId, userId)))
+		.returning();
+	return row ?? null;
 }
 
-export async function deleteFolder(id: number) {
-	await db.delete(folder).where(eq(folder.id, id));
+export async function deleteFolder(id: number, userId: string) {
+	const [row] = await db
+		.delete(folder)
+		.where(and(eq(folder.id, id), eq(folder.userId, userId)))
+		.returning();
+	return row ?? null;
 }
 
 export async function countUserDrawings(userId: string) {

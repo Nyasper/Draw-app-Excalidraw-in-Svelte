@@ -12,11 +12,13 @@
 <nav class="nav">
 	<div class="nav-left">
 		<a href={resolve('/')} class="logo">Excalidraw App</a>
-		<a href={resolve('/draw')} class="nav-link">Draw</a>
+		{#if !user}
+			<a href={resolve('/draw')} class="nav-link">Draw</a>
+		{/if}
 	</div>
 	<div class="nav-right">
 		{#if user}
-			<a href={resolve('/profile')} class="nav-link">{user.name}</a>
+			<a href={resolve('/profile')} class="nav-link">{user.name ?? 'User'}</a>
 			<form method="post" action={resolve('/?/signOut')}>
 				<button class="btn btn-secondary" type="submit">Sign out</button>
 			</form>

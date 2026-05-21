@@ -70,7 +70,7 @@
 {#if loading}
 	<div class="loading-container">
 		<div class="loading-spinner"></div>
-		<p>Loading canvas...</p>
+		<p>Loading Excalidraw...</p>
 	</div>
 {/if}
 

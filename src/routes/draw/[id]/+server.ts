@@ -14,7 +14,8 @@ export const PUT: RequestHandler = async (event) => {
 	const body = await event.request.json();
 	const { title, elements, appState, files, folderId } = body;
 
-	const updated = await updateDrawing(id, { title, elements, appState, files, folderId });
+	const updated = await updateDrawing(id, user.id, { title, elements, appState, files, folderId });
+	if (!updated) return json({ error: 'Not found' }, { status: 404 });
 
 	return json(updated);
 };
@@ -28,6 +29,8 @@ export const DELETE: RequestHandler = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
 
-	await deleteDrawing(id);
+	const deleted = await deleteDrawing(id, user.id);
+	if (!deleted) return json({ error: 'Not found' }, { status: 404 });
+
 	return json({ ok: true });
 };

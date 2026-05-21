@@ -17,7 +17,7 @@
 			<div class="avatar">
 				{data.user.name?.charAt(0)?.toUpperCase() ?? 'U'}
 			</div>
-			<h2>{data.user.name}</h2>
+			<h2>{data.user.name ?? 'User'}</h2>
 			<p class="email">{data.user.email}</p>
 			<span
 				class="badge"

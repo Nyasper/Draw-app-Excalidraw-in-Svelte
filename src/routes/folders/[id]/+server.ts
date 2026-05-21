@@ -13,8 +13,10 @@ export const PUT: RequestHandler = async (event) => {
 	const name = body.name?.toString()?.trim();
 	if (!name) return json({ error: 'Name is required' }, { status: 400 });
 
-	const folder = await renameFolder(id, name);
-	return json(folder);
+	const updated = await renameFolder(id, user.id, name);
+	if (!updated) return json({ error: 'Not found' }, { status: 404 });
+
+	return json(updated);
 };
 
 export const DELETE: RequestHandler = async (event) => {
@@ -24,6 +26,8 @@ export const DELETE: RequestHandler = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
 
-	await deleteFolder(id);
+	const deleted = await deleteFolder(id, user.id);
+	if (!deleted) return json({ error: 'Not found' }, { status: 404 });
+
 	return json({ ok: true });
 };
