@@ -1,0 +1,3 @@
+{
+	"rewrites": [{ "source": "/callback/:provider", "destination": "/api/auth/callback/:provider" }]
+}
