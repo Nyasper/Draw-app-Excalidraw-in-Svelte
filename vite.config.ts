@@ -5,5 +5,8 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	define: {
 		'process.env.IS_PREACT': JSON.stringify('true')
+	},
+	build: {
+		chunkSizeWarningLimit: 2000
 	}
 });
