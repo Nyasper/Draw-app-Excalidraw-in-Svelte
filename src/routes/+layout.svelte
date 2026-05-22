@@ -16,6 +16,7 @@
 	let isSending = $state(false);
 	let feedbackMessage = $state<string | null>(null);
 	let feedbackType = $state<'success' | 'error' | null>(null);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	let cooldownTimer = $state<ReturnType<typeof setTimeout> | null>(null);
 </script>
 
@@ -61,7 +62,7 @@
 								feedbackMessage = null;
 								feedbackType = null;
 								cooldownTimer = null;
-							}, 30_000);
+							}, 30000);
 						} else if (result.type === 'failure') {
 							feedbackMessage = 'Failed to send. Try again.';
 							feedbackType = 'error';

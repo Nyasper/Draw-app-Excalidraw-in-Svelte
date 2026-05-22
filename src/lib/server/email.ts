@@ -15,19 +15,22 @@ interface SendEmailParams {
 	to: string;
 	subject: string;
 	html: string;
+	text: string;
 }
 
 export async function sendEmail({
 	to,
 	subject,
-	html
+	html,
+	text
 }: SendEmailParams): Promise<SendEmailResponse> {
 	const { data, error } = await resend.emails.send(
 		{
 			from: `Excalidraw App <noreply@${env.MY_DOMAIN}>`,
 			to: [to],
 			subject,
-			html
+			html,
+			text
 		},
 		{ idempotencyKey: `${subject.replace(/[^\w.-]+/g, '-').toLowerCase()}/${to}/${Date.now()}` }
 	);

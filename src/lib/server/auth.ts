@@ -28,6 +28,12 @@ export const auth = betterAuth({
 					<p>Click the button below to set a new password. This link expires in 1 hour.</p>`,
 					buttonText: 'Reset password',
 					buttonUrl: url
+				}),
+				text: textTemplate({
+					title: 'Reset your password',
+					body: 'You requested a password reset for your Excalidraw App account.\nClick the link below to set a new password. This link expires in 1 hour.',
+					actionLabel: 'Reset password',
+					actionUrl: url
 				})
 			});
 			if (!result.ok) {
@@ -47,6 +53,12 @@ export const auth = betterAuth({
 					body: `<p>Thanks for creating an account. Please verify your email address to get started.</p>`,
 					buttonText: 'Verify email',
 					buttonUrl: url
+				}),
+				text: textTemplate({
+					title: 'Welcome to Excalidraw App!',
+					body: 'Thanks for creating an account. Please verify your email address to get started.',
+					actionLabel: 'Verify email',
+					actionUrl: url
 				})
 			});
 			if (!result.ok) {
@@ -109,4 +121,26 @@ function emailTemplate({
 </table>
 </body>
 </html>`;
+}
+
+function textTemplate({
+	title,
+	body,
+	actionLabel,
+	actionUrl
+}: {
+	title: string;
+	body: string;
+	actionLabel: string;
+	actionUrl: string;
+}) {
+	return `Excalidraw App
+
+${title}
+
+${body}
+
+${actionLabel}: ${actionUrl}
+
+If you didn't request this, you can safely ignore this email.`;
 }
