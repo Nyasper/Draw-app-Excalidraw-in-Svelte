@@ -16,18 +16,31 @@ export const load: PageServerLoad = async (event) => {
 	const folderParam = event.url.searchParams.get('folder');
 	const selectedFolderId = folderParam ? Number(folderParam) : null;
 
-	const folders = await getUserFolders(user.id).catch(() => []);
+	const folders = await getUserFolders(user.id).catch((err) => {
+		console.error('Failed to load folders:', err);
+		return [];
+	});
 
 	const drawings = selectedFolderId
-		? await getFolderDrawings(user.id, selectedFolderId).catch(() => [])
-		: await getUserDrawings(user.id).catch(() => []);
+		? await getFolderDrawings(user.id, selectedFolderId).catch((err) => {
+				console.error('Failed to load folder drawings:', err);
+				return [];
+			})
+		: await getUserDrawings(user.id).catch((err) => {
+				console.error('Failed to load drawings:', err);
+				return [];
+			});
 
 	return { user, folders, drawings, selectedFolderId, message: '' };
 };
 
 export const actions: Actions = {
 	signOut: async (event) => {
-		await auth.api.signOut({ headers: event.request.headers });
+		try {
+			await auth.api.signOut({ headers: event.request.headers });
+		} catch (err) {
+			console.error('signOut failed:', err);
+		}
 		return redirect(302, '/');
 	},
 	resendVerification: async (event) => {
@@ -41,7 +54,8 @@ export const actions: Actions = {
 					callbackURL: `${event.url.origin}/`
 				}
 			});
-		} catch {
+		} catch (err) {
+			console.error('resendVerification failed:', err);
 			return fail(500, { message: 'Failed to send verification email' });
 		}
 
@@ -57,7 +71,8 @@ export const actions: Actions = {
 
 		try {
 			await createFolder(user.id, name);
-		} catch {
+		} catch (err) {
+			console.error('createFolder failed:', err);
 			return fail(500, { message: 'Failed to create folder' });
 		}
 
@@ -71,15 +86,14 @@ export const actions: Actions = {
 		const title = formData.get('title')?.toString()?.trim() ?? 'Untitled';
 		const folderIdStr = formData.get('folderId')?.toString();
 
+		let drawing;
 		try {
-			const drawing = await createDrawing(
-				user.id,
-				title,
-				folderIdStr ? Number(folderIdStr) : undefined
-			);
-			return redirect(302, `/draw/${drawing.id}`);
-		} catch {
+			drawing = await createDrawing(user.id, title, folderIdStr ? Number(folderIdStr) : undefined);
+		} catch (err) {
+			console.error('createDrawing failed:', err);
 			return fail(500, { message: 'Failed to create drawing' });
 		}
+
+		return redirect(302, `/draw/${drawing.id}`);
 	}
 };

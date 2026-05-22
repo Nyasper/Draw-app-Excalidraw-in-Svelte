@@ -11,13 +11,24 @@ export const PUT: RequestHandler = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
 
-	const body = await event.request.json();
-	const { title, elements, appState, files, folderId } = body;
+	try {
+		const body = await event.request.json();
+		const { title, elements, appState, files, folderId } = body;
 
-	const updated = await updateDrawing(id, user.id, { title, elements, appState, files, folderId });
-	if (!updated) return json({ error: 'Not found' }, { status: 404 });
+		const updated = await updateDrawing(id, user.id, {
+			title,
+			elements,
+			appState,
+			files,
+			folderId
+		});
+		if (!updated) return json({ error: 'Not found' }, { status: 404 });
 
-	return json(updated);
+		return json(updated);
+	} catch (err) {
+		console.error(`PUT /draw/${id} failed:`, err);
+		return json({ error: 'Internal server error' }, { status: 500 });
+	}
 };
 
 export const DELETE: RequestHandler = async (event) => {
@@ -29,8 +40,13 @@ export const DELETE: RequestHandler = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
 
-	const deleted = await deleteDrawing(id, user.id);
-	if (!deleted) return json({ error: 'Not found' }, { status: 404 });
+	try {
+		const deleted = await deleteDrawing(id, user.id);
+		if (!deleted) return json({ error: 'Not found' }, { status: 404 });
 
-	return json({ ok: true });
+		return json({ ok: true });
+	} catch (err) {
+		console.error(`DELETE /draw/${id} failed:`, err);
+		return json({ error: 'Internal server error' }, { status: 500 });
+	}
 };

@@ -29,12 +29,12 @@ export async function sendEmail({
 			subject,
 			html
 		},
-		{ idempotencyKey: `${subject.replace(/\s+/g, '-').toLowerCase()}/${to}/${Date.now()}` }
+		{ idempotencyKey: `${subject.replace(/[^\w.-]+/g, '-').toLowerCase()}/${to}/${Date.now()}` }
 	);
 
 	if (error) {
 		console.error('Resend email error:', error);
-		return { ok: false, error: error.message };
+		return { ok: false, error: `[${error.name}] ${error.message}` };
 	}
 
 	return { ok: true, id: data?.id };

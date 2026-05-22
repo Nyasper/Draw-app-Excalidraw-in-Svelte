@@ -18,6 +18,7 @@ export const actions: Actions = {
 		const passwordConfirm = formData.get('passwordConfirm')?.toString() ?? '';
 		const name = formData.get('username')?.toString() ?? '';
 
+		if (!email) return fail(400, { message: 'Email is required' });
 		if (!password || password.length < 8) {
 			return fail(400, { message: 'Password must be at least 8 characters' });
 		}
@@ -33,7 +34,7 @@ export const actions: Actions = {
 			if (error instanceof APIError) {
 				return fail(400, { message: error.message || 'Registration failed' });
 			}
-
+			console.error('signUpEmail failed:', error);
 			return fail(500, { message: 'Unexpected error' });
 		}
 

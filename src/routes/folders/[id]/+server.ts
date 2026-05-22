@@ -9,14 +9,19 @@ export const PUT: RequestHandler = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
 
-	const body = await event.request.json();
-	const name = body.name?.toString()?.trim();
-	if (!name) return json({ error: 'Name is required' }, { status: 400 });
+	try {
+		const body = await event.request.json();
+		const name = body.name?.toString()?.trim();
+		if (!name) return json({ error: 'Name is required' }, { status: 400 });
 
-	const updated = await renameFolder(id, user.id, name);
-	if (!updated) return json({ error: 'Not found' }, { status: 404 });
+		const updated = await renameFolder(id, user.id, name);
+		if (!updated) return json({ error: 'Not found' }, { status: 404 });
 
-	return json(updated);
+		return json(updated);
+	} catch (err) {
+		console.error(`PUT /folders/${id} failed:`, err);
+		return json({ error: 'Internal server error' }, { status: 500 });
+	}
 };
 
 export const DELETE: RequestHandler = async (event) => {
@@ -26,8 +31,13 @@ export const DELETE: RequestHandler = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) return json({ error: 'Invalid ID' }, { status: 400 });
 
-	const deleted = await deleteFolder(id, user.id);
-	if (!deleted) return json({ error: 'Not found' }, { status: 404 });
+	try {
+		const deleted = await deleteFolder(id, user.id);
+		if (!deleted) return json({ error: 'Not found' }, { status: 404 });
 
-	return json({ ok: true });
+		return json({ ok: true });
+	} catch (err) {
+		console.error(`DELETE /folders/${id} failed:`, err);
+		return json({ error: 'Internal server error' }, { status: 500 });
+	}
 };

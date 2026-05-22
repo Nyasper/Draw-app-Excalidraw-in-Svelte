@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { enhance } from '$app/forms';
+	import { enhance, applyAction } from '$app/forms';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import Nav from '$lib/components/Nav.svelte';
@@ -13,6 +13,10 @@
 	const showVerifyBanner = $derived(data.user && data.emailVerified === false && !isCanvas);
 	const showFooter = $derived(!isCanvas);
 	let bannerDismissed = $state(false);
+	let isSending = $state(false);
+	let feedbackMessage = $state<string | null>(null);
+	let feedbackType = $state<'success' | 'error' | null>(null);
+	let cooldownTimer = $state<ReturnType<typeof setTimeout> | null>(null);
 </script>
 
 <svelte:head>
@@ -26,9 +30,54 @@
 
 	{#if showVerifyBanner && !bannerDismissed}
 		<div class="verify-banner">
-			<span>Your email is not verified. Check your inbox or resend the verification email.</span>
-			<form method="post" action={resolve('/?/resendVerification')} use:enhance>
-				<button class="btn btn-secondary btn-sm" type="submit">Resend verification</button>
+			<span
+				>Please verify your email. A verification link was sent to your inbox. If you don't see the
+				email, please check your spam folder.</span
+			>
+			{#if feedbackMessage}
+				<span
+					class="feedback"
+					class:success={feedbackType === 'success'}
+					class:error={feedbackType === 'error'}
+				>
+					{feedbackMessage}
+				</span>
+			{/if}
+			<form
+				method="post"
+				action={resolve('/?/resendVerification')}
+				use:enhance={() => {
+					isSending = true;
+					feedbackMessage = null;
+					feedbackType = null;
+
+					return async ({ result }) => {
+						isSending = false;
+
+						if (result.type === 'success') {
+							feedbackMessage = 'Verification email sent!';
+							feedbackType = 'success';
+							cooldownTimer = setTimeout(() => {
+								feedbackMessage = null;
+								feedbackType = null;
+								cooldownTimer = null;
+							}, 30_000);
+						} else if (result.type === 'failure') {
+							feedbackMessage = 'Failed to send. Try again.';
+							feedbackType = 'error';
+						} else {
+							await applyAction(result);
+						}
+					};
+				}}
+			>
+				<button
+					class="btn btn-secondary btn-sm"
+					type="submit"
+					disabled={isSending || feedbackType === 'success'}
+				>
+					{isSending ? 'Sending...' : 'Resend verification'}
+				</button>
 			</form>
 			<button class="dismiss-btn" onclick={() => (bannerDismissed = true)} aria-label="Dismiss"
 				>&times;</button
@@ -122,6 +171,20 @@
 	.btn-sm {
 		font-size: 0.75rem;
 		padding: 0.3rem 0.75rem;
+	}
+
+	.feedback {
+		font-size: 0.8rem;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.feedback.success {
+		color: #4ade80;
+	}
+
+	.feedback.error {
+		color: #f87171;
 	}
 
 	.dismiss-btn {

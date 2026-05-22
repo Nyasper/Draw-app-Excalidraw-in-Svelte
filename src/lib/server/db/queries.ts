@@ -27,6 +27,7 @@ export async function createDrawing(userId: string, title: string, folderId?: nu
 		.insert(drawing)
 		.values({ userId, title, folderId: folderId ?? null })
 		.returning();
+	if (!row) throw new Error('Failed to create drawing');
 	return row;
 }
 
@@ -62,6 +63,7 @@ export async function createFolder(userId: string, name: string, parentFolderId?
 		.insert(folder)
 		.values({ userId, name, parentFolderId: parentFolderId ?? null })
 		.returning();
+	if (!row) throw new Error('Failed to create folder');
 	return row;
 }
 

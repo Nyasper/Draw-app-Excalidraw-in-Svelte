@@ -8,8 +8,14 @@ export const load: PageServerLoad = async (event) => {
 	const user = event.locals.user;
 	if (!user) return redirect(302, '/login');
 
-	const drawingsCount = await countUserDrawings(user.id).catch(() => 0);
-	const foldersCount = await countUserFolders(user.id).catch(() => 0);
+	const drawingsCount = await countUserDrawings(user.id).catch((err) => {
+		console.error('Failed to count drawings:', err);
+		return 0;
+	});
+	const foldersCount = await countUserFolders(user.id).catch((err) => {
+		console.error('Failed to count folders:', err);
+		return 0;
+	});
 
 	return {
 		user,
@@ -48,6 +54,7 @@ export const actions: Actions = {
 			if (error instanceof APIError) {
 				return fail(400, { message: error.message || 'Change password failed' });
 			}
+			console.error('changePassword failed:', error);
 			return fail(500, { message: 'Unexpected error' });
 		}
 

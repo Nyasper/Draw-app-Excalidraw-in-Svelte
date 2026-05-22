@@ -2,13 +2,19 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { drawing } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	const id = Number(event.params.id);
 	if (isNaN(id)) throw error(400, 'Invalid drawing ID');
 
-	const rows = await db.select().from(drawing).where(eq(drawing.id, id));
+	const user = event.locals.user;
+	const ownershipFilter = user ? eq(drawing.userId, user.id) : isNull(drawing.userId);
+
+	const rows = await db
+		.select()
+		.from(drawing)
+		.where(and(eq(drawing.id, id), ownershipFilter));
 	if (rows.length === 0) throw error(404, 'Drawing not found');
 
 	const d = rows[0];

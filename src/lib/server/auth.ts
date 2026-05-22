@@ -17,11 +17,11 @@ export const auth = betterAuth({
 	},
 	emailAndPassword: {
 		enabled: true,
-		requireEmailVerification: false,
+		requireEmailVerification: true,
 		sendResetPassword: async ({ user, url }) => {
-			await sendEmail({
+			const result = await sendEmail({
 				to: user.email,
-				subject: 'Reset your password — Excalidraw App',
+				subject: 'Reset your password - Excalidraw App',
 				html: emailTemplate({
 					title: 'Reset your password',
 					body: `<p>You requested a password reset for your Excalidraw App account.</p>
@@ -30,14 +30,18 @@ export const auth = betterAuth({
 					buttonUrl: url
 				})
 			});
+			if (!result.ok) {
+				console.error('Failed to send reset password email:', result.error);
+				throw new Error('Failed to send reset password email');
+			}
 		},
 		resetPasswordTokenExpiresIn: 3600
 	},
 	emailVerification: {
 		sendVerificationEmail: async ({ user, url }) => {
-			await sendEmail({
+			const result = await sendEmail({
 				to: user.email,
-				subject: 'Verify your email — Excalidraw App',
+				subject: 'Verify your email - Excalidraw App',
 				html: emailTemplate({
 					title: 'Welcome to Excalidraw App!',
 					body: `<p>Thanks for creating an account. Please verify your email address to get started.</p>`,
@@ -45,6 +49,10 @@ export const auth = betterAuth({
 					buttonUrl: url
 				})
 			});
+			if (!result.ok) {
+				console.error('Failed to send verification email:', result.error);
+				throw new Error('Failed to send verification email');
+			}
 		}
 	},
 	socialProviders:
