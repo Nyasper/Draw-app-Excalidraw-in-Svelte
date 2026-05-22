@@ -2,7 +2,6 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { APIError } from 'better-auth/api';
-import { env } from '$env/dynamic/private';
 
 export const load: PageServerLoad = (event) => {
 	if (event.locals.user) return redirect(302, '/');
@@ -16,13 +15,11 @@ export const actions: Actions = {
 
 		if (!email) return fail(400, { message: 'Email is required' });
 
-		const origin = env.ORIGIN || `http://localhost:5173`;
-
 		try {
 			await auth.api.requestPasswordReset({
 				body: {
 					email,
-					redirectTo: `${origin}/reset-password`
+					redirectTo: `${event.url.origin}/reset-password`
 				}
 			});
 		} catch (error) {

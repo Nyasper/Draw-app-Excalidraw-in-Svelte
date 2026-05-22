@@ -28,6 +28,7 @@
 
 - Copy `.env.example` to `.env` and fill in values. `.env` is gitignored.
 - Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+- `ORIGIN` is used by Better Auth (`auth.ts:baseURL`) for OAuth callbacks and email links. Route handlers derive the origin dynamically from `event.url.origin`, so `ORIGIN` is only needed if you use OAuth or want outbound email links to point to the correct domain.
 - `MY_DOMAIN` is the verified Resend domain used as the `from` address (`noreply@<MY_DOMAIN>`).
 
 ## Architecture
