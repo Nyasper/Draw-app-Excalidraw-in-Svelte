@@ -7,7 +7,7 @@ import { db } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
 
 export const auth = betterAuth({
-	baseURL: env.ORIGIN || undefined,
+	baseURL: env.ORIGIN || env.BETTER_AUTH_URL || undefined,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
 	user: {
@@ -18,7 +18,8 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 		requireEmailVerification: true,
-		sendResetPassword: async ({ user, url }) => {
+		sendResetPassword: async ({ user, url }, request) => {
+			const resolvedUrl = resolveUrl(url, request);
 			const result = await sendEmail({
 				to: user.email,
 				subject: 'Reset your password - Excalidraw App',
@@ -27,13 +28,13 @@ export const auth = betterAuth({
 					body: `<p>You requested a password reset for your Excalidraw App account.</p>
 					<p>Click the button below to set a new password. This link expires in 1 hour.</p>`,
 					buttonText: 'Reset password',
-					buttonUrl: url
+					buttonUrl: resolvedUrl
 				}),
 				text: textTemplate({
 					title: 'Reset your password',
 					body: 'You requested a password reset for your Excalidraw App account.\nClick the link below to set a new password. This link expires in 1 hour.',
 					actionLabel: 'Reset password',
-					actionUrl: url
+					actionUrl: resolvedUrl
 				})
 			});
 			if (!result.ok) {
@@ -44,7 +45,8 @@ export const auth = betterAuth({
 		resetPasswordTokenExpiresIn: 3600
 	},
 	emailVerification: {
-		sendVerificationEmail: async ({ user, url }) => {
+		sendVerificationEmail: async ({ user, url, token }, request) => {
+			const resolvedUrl = resolveUrl(url, request);
 			const result = await sendEmail({
 				to: user.email,
 				subject: 'Verify your email - Excalidraw App',
@@ -52,13 +54,13 @@ export const auth = betterAuth({
 					title: 'Welcome to Excalidraw App!',
 					body: `<p>Thanks for creating an account. Please verify your email address to get started.</p>`,
 					buttonText: 'Verify email',
-					buttonUrl: url
+					buttonUrl: resolvedUrl
 				}),
 				text: textTemplate({
 					title: 'Welcome to Excalidraw App!',
 					body: 'Thanks for creating an account. Please verify your email address to get started.',
 					actionLabel: 'Verify email',
-					actionUrl: url
+					actionUrl: resolvedUrl
 				})
 			});
 			if (!result.ok) {
@@ -78,6 +80,12 @@ export const auth = betterAuth({
 			: undefined,
 	plugins: [sveltekitCookies(getRequestEvent)]
 });
+
+function resolveUrl(url: string, request?: Request): string {
+	if (url.startsWith('http')) return url;
+	if (!request) return url;
+	return `${new URL(request.url).origin}${url}`;
+}
 
 function emailTemplate({
 	title,
