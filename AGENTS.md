@@ -27,7 +27,8 @@
 ## Environment
 
 - Copy `.env.example` to `.env` and fill in values. `.env` is gitignored.
-- Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+- Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+- `MY_DOMAIN` is the verified Resend domain used as the `from` address (`noreply@<MY_DOMAIN>`).
 
 ## Architecture
 
@@ -129,5 +130,5 @@ src/
 
 ## Gotchas
 
-- **`db/index.ts` uses `process.env`** instead of `$env/dynamic/private` for compatibility with the Better Auth CLI (jiti).
-- **All packages are in `devDependencies`** — there are no production `dependencies`. Resend is the exception (used server-side only).
+- **`db/index.ts` uses `$env/static/private`** for DATABASE_URL. For production on Vercel, this is processed at build time and works fine.
+- **Runtime server packages** (`better-auth`, `drizzle-orm`, `postgres`) are in `dependencies` (not `devDependencies`) so they survive Vercel's production install pruning.

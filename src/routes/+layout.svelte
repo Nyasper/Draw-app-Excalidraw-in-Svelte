@@ -44,7 +44,12 @@
 		<footer class="app-footer">
 			<span>
 				&copy; {new Date().getFullYear()}
-				<a href="https://github.com/Nyasper" class="footer-link" target="_blank" rel="noopener noreferrer">
+				<a
+					href="https://github.com/Nyasper"
+					class="footer-link"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
 					{@render githubIcon(13)}
 					Nyasper
 				</a>

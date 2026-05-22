@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { env } from '$env/dynamic/private';
 import { auth } from '$lib/server/auth';
 import {
 	getUserFolders,
@@ -38,7 +39,7 @@ export const actions: Actions = {
 			await auth.api.sendVerificationEmail({
 				body: {
 					email: user.email,
-					callbackURL: `${process.env.ORIGIN || 'http://localhost:5173'}/`
+					callbackURL: `${env.ORIGIN || 'http://localhost:5173'}/`
 				}
 			});
 		} catch {

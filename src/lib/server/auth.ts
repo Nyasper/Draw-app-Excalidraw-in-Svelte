@@ -47,12 +47,15 @@ export const auth = betterAuth({
 			});
 		}
 	},
-	socialProviders: {
-		github: {
-			clientId: env.GITHUB_CLIENT_ID,
-			clientSecret: env.GITHUB_CLIENT_SECRET
-		}
-	},
+	socialProviders:
+		env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+			? {
+					github: {
+						clientId: env.GITHUB_CLIENT_ID,
+						clientSecret: env.GITHUB_CLIENT_SECRET
+					}
+				}
+			: undefined,
 	plugins: [sveltekitCookies(getRequestEvent)]
 });
 
