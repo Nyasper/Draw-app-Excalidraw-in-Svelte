@@ -11,10 +11,10 @@ export const load: PageServerLoad = async (event) => {
 
 export const actions: Actions = {
 	resetPassword: async (event) => {
-		const token = event.url.searchParams.get('token');
+		const formData = await event.request.formData();
+		const token = formData.get('token')?.toString() ?? '';
 		if (!token) return fail(400, { message: 'Invalid or expired token' });
 
-		const formData = await event.request.formData();
 		const password = formData.get('password')?.toString() ?? '';
 		const passwordConfirm = formData.get('passwordConfirm')?.toString() ?? '';
 

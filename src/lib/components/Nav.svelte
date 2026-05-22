@@ -18,7 +18,7 @@
 	</div>
 	<div class="nav-right">
 		{#if user}
-			<a href={resolve('/profile')} class="nav-link">{user.name ?? 'User'}</a>
+			<a href={resolve('/profile')} class="nav-link">{user.name ?? 'Username'}</a>
 			<form method="post" action={resolve('/?/signOut')}>
 				<button class="btn btn-secondary" type="submit">Sign out</button>
 			</form>

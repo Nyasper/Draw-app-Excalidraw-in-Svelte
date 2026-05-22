@@ -17,7 +17,7 @@
 			<div class="avatar">
 				{data.user.name?.charAt(0)?.toUpperCase() ?? 'U'}
 			</div>
-			<h2>{data.user.name ?? 'User'}</h2>
+			<h2>Username: {data.user.name ?? 'User'}</h2>
 			<p class="email">{data.user.email}</p>
 			<span
 				class="badge"
@@ -48,7 +48,13 @@
 	<div class="password-card">
 		<h3>Change password</h3>
 
-		<form method="post" action="?/changePassword" use:enhance>
+		<form
+			method="post"
+			action="?/changePassword"
+			use:enhance={({ cancel }) => {
+				if (!confirm('Are you sure you want to change your password?')) cancel();
+			}}
+		>
 			<label>
 				Current password
 				<input type="password" name="currentPassword" required />

@@ -16,7 +16,7 @@ export const actions: Actions = {
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
 		const passwordConfirm = formData.get('passwordConfirm')?.toString() ?? '';
-		const name = formData.get('name')?.toString() ?? '';
+		const name = formData.get('username')?.toString() ?? '';
 
 		if (!password || password.length < 8) {
 			return fail(400, { message: 'Password must be at least 8 characters' });

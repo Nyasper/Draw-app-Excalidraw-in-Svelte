@@ -33,11 +33,16 @@
 		<div class="features">
 			<div class="feature">
 				<h3>Draw without limits</h3>
-				<p>Shapes, freehand, arrows, text, and more &mdash; everything you need to express your ideas.</p>
+				<p>
+					Shapes, freehand, arrows, text, and more &mdash; everything you need to express your
+					ideas.
+				</p>
 			</div>
 			<div class="feature">
 				<h3>Save to the cloud</h3>
-				<p>Create an account and your drawings are saved automatically, accessible from any device.</p>
+				<p>
+					Create an account and your drawings are saved automatically, accessible from any device.
+				</p>
 			</div>
 			<div class="feature">
 				<h3>Organize with folders</h3>

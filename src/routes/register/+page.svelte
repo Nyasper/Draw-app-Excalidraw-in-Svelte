@@ -16,8 +16,8 @@
 
 		<form method="post" action="?/signUpEmail" use:enhance>
 			<label>
-				Name
-				<input type="text" name="name" required />
+				Username
+				<input type="text" name="username" required />
 			</label>
 			<label>
 				Email

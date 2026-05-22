@@ -3,7 +3,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 
-	let { form }: PageProps = $props();
+	let { form, data }: PageProps = $props();
 </script>
 
 <svelte:head>
@@ -15,6 +15,7 @@
 		<h1>Reset your password</h1>
 
 		<form method="post" action="?/resetPassword" use:enhance>
+			<input type="hidden" name="token" value={data.token} />
 			<label>
 				New password
 				<input type="password" name="password" required minlength="8" />

@@ -54,6 +54,21 @@
 	let dragJustEnded = $state(false);
 
 	const selectedCount = $derived(selectedIds.size);
+	const anySelectedHasFolder = $derived(
+		[...selectedIds].some((id) => drawings.find((d) => d.id === id)?.folderId != null)
+	);
+	const contextDrawingHasFolder = $derived.by(() => {
+		const menu = contextMenu;
+		if (!menu || menu.type !== 'drawing' || menu.id == null) return false;
+		const drawing = drawings.find((d) => d.id === menu.id);
+		return drawing?.folderId != null;
+	});
+
+	const isSelectionMenu = $derived.by(() => {
+		const menu = contextMenu;
+		if (!menu || menu.type !== 'drawing' || menu.id == null || selectedIds.size === 0) return false;
+		return selectedIds.has(menu.id);
+	});
 
 	function clampToViewport(x: number, y: number, menuW = 160, menuH = 120) {
 		return {
@@ -63,8 +78,8 @@
 	}
 
 	function getFolderName(folderId: number | null) {
-		if (folderId === null) return '—';
-		return folders.find((f) => f.id === folderId)?.name ?? '—';
+		if (folderId === null) return 'no folder';
+		return folders.find((f) => f.id === folderId)?.name ?? 'no folder';
 	}
 
 	function getFolderDrawingCount(folderId: number) {
@@ -294,11 +309,28 @@
 		const count = getFolderDrawingCount(id);
 		let msg = `Delete folder "${name}"?`;
 		if (count > 0) {
-			msg += ` It contains ${count} drawing${count !== 1 ? 's' : ''} that will also be removed.`;
+			msg += ` It contains ${count} drawing${count !== 1 ? 's' : ''}.`;
 		}
 		if (!confirm(msg)) return;
+
+		if (
+			count > 0 &&
+			confirm(`Also delete the ${count} drawing${count !== 1 ? 's' : ''} inside "${name}"?`)
+		) {
+			const folderDrawings = drawings.filter((d) => d.folderId === id);
+			for (const d of folderDrawings) {
+				await fetch(resolve(`/draw/${d.id}`), { method: 'DELETE' }).catch(() => {});
+			}
+		}
+
 		await fetch(resolve(`/folders/${id}`), { method: 'DELETE' })
-			.then(() => window.location.reload())
+			.then(() => {
+				if (id === selectedFolderId) {
+					window.location.href = resolve('/');
+				} else {
+					window.location.reload();
+				}
+			})
 			.catch(() => {});
 	}
 
@@ -346,6 +378,7 @@
 					class="folder-item"
 					oncontextmenu={(e) => openFolderMenu(e, f)}
 				>
+					{@render folderIcon(14)}
 					<span class="folder-item-name">{f.name}</span>
 					<button
 						class="folder-trash"
@@ -356,40 +389,11 @@
 						}}
 						aria-label="Delete folder"
 					>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							xmlns="http://www.w3.org/2000/svg"
-						>
-							<path d="M5 7.5H19L18 21H6L5 7.5Z" stroke="currentColor" stroke-linejoin="round" />
-							<path
-								d="M15.5 9.5L15 19"
-								stroke="currentColor"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-							<path
-								d="M12 9.5V19"
-								stroke="currentColor"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-							<path
-								d="M8.5 9.5L9 19"
-								stroke="currentColor"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-							<path
-								d="M16 5H19C20.1046 5 21 5.89543 21 7V7.5H3V7C3 5.89543 3.89543 5 5 5H8M16 5L15 3H9L8 5M16 5H8"
-								stroke="currentColor"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						{@render trashIcon(14)}
 					</button>
 				</a>
+			{:else}
+				<p class="folder-empty">No folders yet.</p>
 			{/each}
 		</nav>
 		<form method="post" action="?/createFolder" use:enhance class="new-folder-form">
@@ -409,36 +413,33 @@
 				{#if selectedCount > 0}
 					<span class="selection-count">{selectedCount} selected</span>
 					<button class="btn btn-danger" onclick={deleteSelected}>Delete</button>
-					<div class="move-folder-wrap">
-						<button class="btn btn-secondary" onclick={() => (moveFolderOpen = !moveFolderOpen)}>
-							Move to folder
+					{#if folders.length > 0}
+						<div class="move-folder-wrap">
+							<button class="btn btn-secondary" onclick={() => (moveFolderOpen = !moveFolderOpen)}>
+								Move to folder
+							</button>
+							{#if moveFolderOpen}
+								<div class="folder-dropdown">
+									{#each folders as f (f.id)}
+										<button
+											class="folder-dropdown-item"
+											onclick={() => {
+												moveSelectedToFolder(f.id);
+												moveFolderOpen = false;
+											}}
+										>
+											{f.name}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/if}
+					{#if anySelectedHasFolder}
+						<button class="btn btn-secondary" onclick={() => moveSelectedToFolder(null)}>
+							Remove from folder
 						</button>
-						{#if moveFolderOpen}
-							<div class="folder-dropdown">
-								<button
-									class="folder-dropdown-item"
-									onclick={() => {
-										moveSelectedToFolder(null);
-										moveFolderOpen = false;
-									}}
-								>
-									All drawings
-								</button>
-								<div class="folder-dropdown-divider"></div>
-								{#each folders as f (f.id)}
-									<button
-										class="folder-dropdown-item"
-										onclick={() => {
-											moveSelectedToFolder(f.id);
-											moveFolderOpen = false;
-										}}
-									>
-										{f.name}
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
+					{/if}
 				{:else}
 					<div class="view-toggle">
 						<div class="pill-bg" class:right={viewMode === 'list'}></div>
@@ -514,10 +515,35 @@
 						>
 							<div class="drawing-preview">
 								<span class="drawing-icon">&#9998;</span>
+								<span
+									class="drawing-trash"
+									role="button"
+									tabindex="0"
+									aria-label="Delete drawing"
+									onclick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										deleteDrawing(d.id);
+									}}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											e.stopPropagation();
+											deleteDrawing(d.id);
+										}
+									}}
+								>
+									{@render trashIcon(14)}
+								</span>
 							</div>
 							<div class="drawing-info">
 								<span class="drawing-title">{d.title}</span>
-								<span class="drawing-meta">{getFolderName(d.folderId)}</span>
+								<span class="drawing-meta">
+									{#if d.folderId != null}
+										{@render folderIcon(13)}
+									{/if}
+									{getFolderName(d.folderId)}
+								</span>
 								<span class="drawing-date">{new Date(d.updatedAt).toLocaleDateString()}</span>
 							</div>
 						</button>
@@ -525,12 +551,14 @@
 				</div>
 			{:else}
 				<div class="drawings-list">
-					<div class="list-header">
-						<span class="col-name">Name</span>
-						<span class="col-folder">Folder</span>
-						<span class="col-date">Created</span>
-						<span class="col-date">Modified</span>
-					</div>
+					{#if drawings.length > 0}
+						<div class="list-header">
+							<span class="col-name">Name</span>
+							<span class="col-folder">Folder</span>
+							<span class="col-date">Created</span>
+							<span class="col-date">Modified</span>
+						</div>
+					{/if}
 					{#each drawings as d (d.id)}
 						<button
 							class="list-row"
@@ -554,8 +582,35 @@
 							}}
 							oncontextmenu={(e) => openDrawingMenu(e, d)}
 						>
-							<span class="col-name">{d.title}</span>
-							<span class="col-folder">{getFolderName(d.folderId)}</span>
+							<span class="col-name">
+								<span class="col-name-text">{d.title}</span>
+								<span
+									class="drawing-trash"
+									role="button"
+									tabindex="0"
+									aria-label="Delete drawing"
+									onclick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										deleteDrawing(d.id);
+									}}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											e.stopPropagation();
+											deleteDrawing(d.id);
+										}
+									}}
+								>
+									{@render trashIcon(14)}
+								</span>
+							</span>
+							<span class="col-folder">
+								{#if d.folderId != null}
+									{@render folderIcon(13)}
+								{/if}
+								{getFolderName(d.folderId)}
+							</span>
 							<span class="col-date">{new Date(d.createdAt).toLocaleDateString()}</span>
 							<span class="col-date">{new Date(d.updatedAt).toLocaleDateString()}</span>
 						</button>
@@ -583,28 +638,30 @@
 {#if contextMenu}
 	<div class="context-menu" style="left: {contextMenu.x}px; top: {contextMenu.y}px;" role="menu">
 		{#if contextMenu.type === 'drawing'}
-			<a href={resolve(`/draw/${contextMenu.id}`)} class="context-item" role="menuitem"> Open </a>
-			<button
-				class="context-item"
-				role="menuitem"
-				onclick={() => {
-					const ctx = contextMenu!;
-					if (ctx.type !== 'drawing') return;
-					const newTitle = prompt('Rename drawing:', ctx.title);
-					if (newTitle && newTitle !== ctx.title) {
-						fetch(resolve(`/draw/${ctx.id}`), {
-							method: 'PUT',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ title: newTitle })
-						})
-							.then(() => window.location.reload())
-							.catch(() => {});
-					}
-					contextMenu = null;
-				}}
-			>
-				Rename
-			</button>
+			{#if !isSelectionMenu}
+				<a href={resolve(`/draw/${contextMenu.id}`)} class="context-item" role="menuitem"> Open </a>
+				<button
+					class="context-item"
+					role="menuitem"
+					onclick={() => {
+						const ctx = contextMenu!;
+						if (ctx.type !== 'drawing') return;
+						const newTitle = prompt('Rename drawing:', ctx.title);
+						if (newTitle && newTitle !== ctx.title) {
+							fetch(resolve(`/draw/${ctx.id}`), {
+								method: 'PUT',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ title: newTitle })
+							})
+								.then(() => window.location.reload())
+								.catch(() => {});
+						}
+						contextMenu = null;
+					}}
+				>
+					Rename
+				</button>
+			{/if}
 			<button
 				class="context-item"
 				role="menuitem"
@@ -614,40 +671,88 @@
 					moveTargetId = moveTargetId === ctx.id ? null : ctx.id!;
 				}}
 			>
-				Move to...
+				Move to folder
 			</button>
 			{#if moveTargetId === contextMenu.id}
 				<div class="context-menu-sub">
 					<button
 						class="context-item"
 						role="menuitem"
-						onclick={() => {
+						onclick={async () => {
+							const isMulti = isSelectionMenu;
 							const ctx = contextMenu!;
-							if (ctx.type !== 'drawing') return;
-							moveDrawingToFolder(ctx.id!, null);
-							moveTargetId = null;
 							contextMenu = null;
+							moveTargetId = null;
+							const name = prompt('Folder name:');
+							if (!name) return;
+							const res = await fetch(resolve('/folders'), {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ name })
+							});
+							const folder = await res.json();
+							if (isMulti) {
+								for (const id of selectedIds) {
+									await fetch(resolve(`/draw/${id}`), {
+										method: 'PUT',
+										headers: { 'Content-Type': 'application/json' },
+										body: JSON.stringify({ folderId: folder.id })
+									}).catch(() => {});
+								}
+							} else {
+								await fetch(resolve(`/draw/${ctx.id!}`), {
+									method: 'PUT',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({ folderId: folder.id })
+								}).catch(() => {});
+							}
+							window.location.reload();
 						}}
 					>
-						All drawings
+						Create folder
 					</button>
-					<div class="context-menu-divider"></div>
-					{#each folders as f (f.id)}
-						<button
-							class="context-item"
-							role="menuitem"
-							onclick={() => {
-								const ctx = contextMenu!;
-								if (ctx.type !== 'drawing') return;
-								moveDrawingToFolder(ctx.id!, f.id);
-								moveTargetId = null;
-								contextMenu = null;
-							}}
-						>
-							{f.name}
-						</button>
-					{/each}
+					{#if folders.length > 0}
+						<div class="context-menu-divider"></div>
+						{#each folders as f (f.id)}
+							<button
+								class="context-item"
+								role="menuitem"
+								onclick={() => {
+									const ctx = contextMenu!;
+									if (ctx.type !== 'drawing') return;
+									if (isSelectionMenu) {
+										moveSelectedToFolder(f.id);
+									} else {
+										moveDrawingToFolder(ctx.id!, f.id);
+									}
+									moveTargetId = null;
+									contextMenu = null;
+								}}
+							>
+								{f.name}
+							</button>
+						{/each}
+					{/if}
 				</div>
+			{/if}
+			{#if contextDrawingHasFolder}
+				<button
+					class="context-item"
+					role="menuitem"
+					onclick={() => {
+						const ctx = contextMenu!;
+						if (ctx.type !== 'drawing') return;
+						if (isSelectionMenu) {
+							moveSelectedToFolder(null);
+						} else {
+							moveDrawingToFolder(ctx.id!, null);
+						}
+						moveTargetId = null;
+						contextMenu = null;
+					}}
+				>
+					Remove from folder
+				</button>
 			{/if}
 			<div class="context-menu-divider"></div>
 			<button
@@ -656,10 +761,10 @@
 				onclick={async () => {
 					const ctx = contextMenu!;
 					if (ctx.type !== 'drawing') return;
+					const isMulti = isSelectionMenu;
 					contextMenu = null;
-					// yield to let Svelte re-render (remove context menu) before blocking confirm()
 					await new Promise((r) => setTimeout(r, 0));
-					if (selectedIds.size > 0 && selectedIds.has(ctx.id!)) {
+					if (isMulti) {
 						deleteSelected();
 					} else {
 						deleteDrawing(ctx.id!);
@@ -764,6 +869,45 @@
 	</div>
 {/if}
 
+<!-- Snippets -->
+
+{#snippet trashIcon(size: number)}
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		xmlns="http://www.w3.org/2000/svg"
+	>
+		<path
+			d="M9 3H15M3 6H21M19 6L18.2987 16.5193C18.1935 18.0975 18.1409 18.8867 17.8 19.485C17.4999 20.0118 17.0472 20.4353 16.5017 20.6997C15.882 21 15.0911 21 13.5093 21H10.4907C8.90891 21 8.11803 21 7.49834 20.6997C6.95276 20.4353 6.50009 20.0118 6.19998 19.485C5.85911 18.8867 5.8065 18.0975 5.70129 16.5193L5 6"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	</svg>
+{/snippet}
+
+{#snippet folderIcon(size: number)}
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		xmlns="http://www.w3.org/2000/svg"
+		class="folder-icon"
+	>
+		<path
+			d="M3 8.2C3 7.07989 3 6.51984 3.21799 6.09202C3.40973 5.71569 3.71569 5.40973 4.09202 5.21799C4.51984 5 5.0799 5 6.2 5H9.67452C10.1637 5 10.4083 5 10.6385 5.05526C10.8425 5.10425 11.0376 5.18506 11.2166 5.29472C11.4184 5.4184 11.5914 5.59135 11.9373 5.93726L12.0627 6.06274C12.4086 6.40865 12.5816 6.5816 12.7834 6.70528C12.9624 6.81494 13.1575 6.89575 13.3615 6.94474C13.5917 7 13.8363 7 14.3255 7H17.8C18.9201 7 19.4802 7 19.908 7.21799C20.2843 7.40973 20.5903 7.71569 20.782 8.09202C21 8.51984 21 9.0799 21 10.2V15.8C21 16.9201 21 17.4802 20.782 17.908C20.5903 18.2843 20.2843 18.5903 19.908 18.782C19.4802 19 18.9201 19 17.8 19H6.2C5.07989 19 4.51984 19 4.09202 18.782C3.71569 18.5903 3.40973 18.2843 3.21799 17.908C3 17.4802 3 16.9201 3 15.8V8.2Z"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+	</svg>
+{/snippet}
+
 <style>
 	.dashboard {
 		display: flex;
@@ -843,6 +987,13 @@
 		}
 	}
 
+	.folder-icon {
+		flex-shrink: 0;
+		color: var(--text-muted);
+		margin-right: 0.35rem;
+		vertical-align: middle;
+	}
+
 	.folder-item-name {
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -884,6 +1035,13 @@
 				background-color: rgba(255, 107, 107, 0.2);
 			}
 		}
+	}
+
+	.folder-empty {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		padding: 0.4rem 0.6rem;
+		opacity: 0.7;
 	}
 
 	.new-folder-form {
@@ -1016,12 +1174,6 @@
 		}
 	}
 
-	.folder-dropdown-divider {
-		height: 1px;
-		background-color: var(--border);
-		margin: 0.25rem 0;
-	}
-
 	.header-actions .btn {
 		font-size: 0.8rem;
 		padding: 0.35rem 0.85rem;
@@ -1074,6 +1226,7 @@
 	}
 
 	.drawing-preview {
+		position: relative;
 		height: 120px;
 		background-color: var(--bg-tertiary);
 		display: flex;
@@ -1084,6 +1237,42 @@
 	.drawing-icon {
 		font-size: 2rem;
 		opacity: 0.3;
+	}
+
+	.drawing-trash {
+		color: var(--text-muted);
+		cursor: pointer;
+		opacity: 0;
+		transition:
+			opacity 0.15s,
+			color 0.15s;
+	}
+
+	.drawing-preview .drawing-trash {
+		position: absolute;
+		top: 0.25rem;
+		right: 0.25rem;
+	}
+
+	.col-name .drawing-trash {
+		flex-shrink: 0;
+		margin-left: 0.15rem;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.col-name .drawing-trash svg {
+		display: block;
+	}
+
+	.drawing-card:hover .drawing-trash,
+	.list-row:hover .drawing-trash {
+		opacity: 0.7;
+	}
+
+	.drawing-trash:hover {
+		color: var(--danger);
+		opacity: 1;
 	}
 
 	.drawing-info {
@@ -1132,6 +1321,7 @@
 	}
 
 	.list-row {
+		position: relative;
 		display: grid;
 		grid-template-columns: 2fr 1fr 1fr 1fr;
 		padding: 0.65rem 1rem;
@@ -1165,9 +1355,17 @@
 	}
 
 	.col-name {
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+		min-width: 0;
+	}
+
+	.col-name-text {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		min-width: 0;
 	}
 
 	.col-folder,

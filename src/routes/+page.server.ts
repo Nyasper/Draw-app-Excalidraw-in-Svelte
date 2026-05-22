@@ -16,11 +16,7 @@ export const load: PageServerLoad = async (event) => {
 	const folderParam = event.url.searchParams.get('folder');
 	const selectedFolderId = folderParam ? Number(folderParam) : null;
 
-	let folders = await getUserFolders(user.id).catch(() => []);
-	if (folders.length === 0) {
-		await createFolder(user.id, 'My Drawings').catch(() => {});
-		folders = await getUserFolders(user.id).catch(() => []);
-	}
+	const folders = await getUserFolders(user.id).catch(() => []);
 
 	const drawings = selectedFolderId
 		? await getFolderDrawings(user.id, selectedFolderId).catch(() => [])

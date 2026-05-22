@@ -7,9 +7,14 @@ import { db } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
 
 export const auth = betterAuth({
-	baseURL: env.ORIGIN,
+	baseURL: env.ORIGIN || 'http://localhost:5173',
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
+	user: {
+		fields: {
+			name: 'username'
+		}
+	},
 	emailAndPassword: {
 		enabled: true,
 		requireEmailVerification: false,

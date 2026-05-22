@@ -16,11 +16,13 @@ export const actions: Actions = {
 
 		if (!email) return fail(400, { message: 'Email is required' });
 
+		const origin = env.ORIGIN || `http://localhost:5173`;
+
 		try {
 			await auth.api.requestPasswordReset({
 				body: {
 					email,
-					redirectTo: `${env.ORIGIN || `http://localhost:${env.PORT || 5173}`}/reset-password`
+					redirectTo: `${origin}/reset-password`
 				}
 			});
 		} catch (error) {
