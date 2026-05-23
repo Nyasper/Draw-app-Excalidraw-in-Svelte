@@ -10,19 +10,14 @@
 
 	<section class="reason">
 		<h2>Why this project exists</h2>
-
-		<h3>English</h3>
-		<p>
-			This project was created for <strong>two main reasons</strong>:
-		</p>
+		<p>This project was created for <strong>three main reasons</strong>:</p>
 		<ol>
 			<li>
-				<strong>Prove that React libraries can run inside Svelte.</strong>
-				The core idea is to demonstrate that it's entirely possible to embed a React component &mdash;
-				even a complex one like Excalidraw &mdash; inside a Svelte application. By initializing the React
-				component within a Svelte 5 <code>&#123;&#64;attach excalidraw&#125;</code>
-				directive, we bridge the two frameworks seamlessly. React becomes just another rendering target,
-				while Svelte handles routing, server logic, state management, and the overall architecture.
+				<strong>My first project using agentic AI.</strong>
+				This is my first time building a real-world product end-to-end by myself, using agentic AI tools
+				alongside all of my web development knowledge. The goal was to go beyond tutorials and side
+				experiments &mdash; to ship something complete, with authentication, a database, email flows,
+				and a polished UI. A production-grade application built from scratch.
 			</li>
 			<li>
 				<strong>Svelte is the framework I know best.</strong>
@@ -32,35 +27,18 @@
 				<code>$effect</code>), SvelteKit's file-based routing, and the clean separation between
 				client and server make it an excellent choice for this kind of project.
 			</li>
-		</ol>
-
-		<h3>Español</h3>
-		<p>
-			Este proyecto nació por <strong>dos razones principales</strong>:
-		</p>
-		<ol>
 			<li>
-				<strong>Demostrar que es posible utilizar librerías de React dentro de Svelte.</strong>
-				La idea central es probar que es completamente factible embeber un componente de React &mdash;
-				incluso uno tan complejo como Excalidraw &mdash; dentro de una aplicación Svelte. Inicializando
-				el componente de React dentro de la directiva
-				<code>&#123;&#64;attach excalidraw&#125;</code> de Svelte 5, logramos conectar ambos frameworks
-				de forma transparente. React se convierte simplemente en otro destino de renderizado, mientras
-				que Svelte se encarga del routing, la lógica del servidor, la gestión de estado y toda la arquitectura.
-			</li>
-			<li>
-				<strong>Svelte es el framework que más domino.</strong>
-				Elegí Svelte no porque esté de moda, sino porque es el framework con el que me siento más cómodo.
-				Quería construir algo real y con todas sus funcionalidades usando las herramientas que entiendo
-				a profundidad. El modo runes de Svelte 5 (<code>$state</code>,
-				<code>$derived</code>, <code>$effect</code>), el routing basado en archivos de SvelteKit y
-				la limpia separación entre cliente y servidor lo convierten en una excelente elección para
-				este tipo de proyecto.
+				<strong>It is possible to use React libraries inside Svelte.</strong>
+				A technical bonus: this project demonstrates that it's entirely possible to embed a React
+				component &mdash; even a complex one like Excalidraw &mdash; inside a Svelte application. By
+				initializing the React component within a Svelte 5 <code>$effect()</code>
+				(via the <code>@attach</code> directive), we bridge the two frameworks seamlessly. React becomes
+				just another rendering target, while Svelte handles everything else.
 			</li>
 		</ol>
 		<p class="result">
 			The result? A working Excalidraw clone with auth, database persistence, and folder
-			organization &mdash; all powered by Svelte, with React living quietly inside a single
+			management &mdash; all powered by Svelte, with React living quietly inside a single
 			component.
 		</p>
 	</section>
@@ -79,11 +57,12 @@
 				<tr><td>Full-stack framework</td><td>SvelteKit</td></tr>
 				<tr><td>Backend</td><td>SvelteKit server actions + load functions</td></tr>
 				<tr><td>Auth</td><td>Better Auth (email/password + GitHub OAuth)</td></tr>
+				<tr><td>Email</td><td>Resend (verification, password reset)</td></tr>
 				<tr><td>ORM</td><td>Drizzle ORM</td></tr>
 				<tr><td>Database</td><td>PostgreSQL 18</td></tr>
 				<tr><td>DB Runtime</td><td>Docker Compose (local development)</td></tr>
 				<tr><td>React component</td><td>@excalidraw/excalidraw</td></tr>
-				<tr><td>React bridge</td><td>react + react-dom (initialized inside @attach)</td></tr>
+				<tr><td>React bridge</td><td>react + react-dom (initialized inside $effect())</td></tr>
 				<tr><td>Language</td><td>TypeScript (strict mode)</td></tr>
 				<tr><td>Package manager</td><td>Bun</td></tr>
 				<tr><td>Linting/Formatting</td><td>ESLint + Prettier</td></tr>
@@ -109,12 +88,6 @@
 		font-size: 1.3rem;
 		margin: 2rem 0 1rem;
 		color: var(--text-primary);
-	}
-
-	h3 {
-		font-size: 1rem;
-		margin: 1.2rem 0 0.5rem;
-		color: var(--accent);
 	}
 
 	p {

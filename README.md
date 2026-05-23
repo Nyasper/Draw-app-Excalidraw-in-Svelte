@@ -38,6 +38,25 @@ El resultado: un clon funcional de Excalidraw con autenticación, persistencia e
 
 ---
 
+## Screenshots
+
+### Login
+![Login](screenshots/login.png)
+
+### Home
+![Home](screenshots/home.png)
+
+### Dashboard - Grid View
+![Dashboard Grid View](screenshots/dashboard-grid-view.png)
+
+### Dashboard - List View
+![Dashboard List View](screenshots/dashboard_list-view.png)
+
+### Canvas Editor
+![Canvas Editor](screenshots/draw.png)
+
+---
+
 ## Tech Stack
 
 | Layer                | Technology                                             |
