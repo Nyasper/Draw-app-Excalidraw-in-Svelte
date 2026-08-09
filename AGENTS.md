@@ -122,8 +122,8 @@ src/
 
 - **Platform**: Cloudflare Workers with Static Assets (`@sveltejs/adapter-cloudflare`). Output goes to `.svelte-kit/cloudflare`.
 - **CI**: Cloudflare **Workers Builds** (Git integration) connected to this GitHub repo — every push to the configured branch builds with `bun install && bun run build` and deploys automatically. Manual deploys are possible with `bun run deploy` and local CF testing with `bun run dev:cf`.
-- **`wrangler.jsonc`**: single source of truth for the worker (`main`, `assets`, `compatibility_flags: ["nodejs_compat", "nodejs_als"]`, `HYPERDRIVE` binding id). Replace the placeholder id with the real Hyperdrive config.
-- **Cut-over note**: the Cloudflare adapter lives on branch `cf`. Merging it to `main` makes the build Vercel-incompatible, so cut over (merge + DNS move to Cloudflare) only when ready, then disable Vercel. Rollback is `wrangler rollback`.
+- **`wrangler.jsonc`**: single source of truth for the worker (`main`, `assets`, `compatibility_flags: ["nodejs_compat", "nodejs_als"]`, `HYPERDRIVE` binding id). Replace the placeholder id with the real Hyperdrive config. `secrets.required` lists all secrets that must exist on the worker for any deploy to pass.
+- **Rollback**: `wrangler rollback` restores the previous deployed version if a deploy misbehaves.
 
 ## Framework quirks
 
