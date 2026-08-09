@@ -13,6 +13,21 @@
 	"cache": {
 		"enabled": true
 	},
+	// Runtime env vars are injected as secrets from `.env.production` via `--secrets-file`
+	// (see `bun run deploy`). Declaring them in `secrets.required` makes every deploy — local
+	// and Workers Builds — fail with a clear error instead of shipping a worker missing them.
+	// `keep_vars` stops Wrangler from deleting dashboard-set vars that aren't in this config.
+	"keep_vars": true,
+	"secrets": {
+		"required": [
+			"ORIGIN",
+			"MY_DOMAIN",
+			"GITHUB_CLIENT_ID_PROD",
+			"BETTER_AUTH_SECRET",
+			"RESEND_API_KEY",
+			"GITHUB_CLIENT_SECRET_PROD"
+		]
+	},
 	// Bindings are defined here so `wrangler deploy` and Workers Builds pick them up.
 	// Replace the `id` below with your real Hyperdrive config id (Cloudflare dashboard or
 	// `bunx wrangler hyperdrive create`).
