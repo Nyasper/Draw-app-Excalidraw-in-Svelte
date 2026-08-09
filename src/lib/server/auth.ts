@@ -8,86 +8,111 @@ import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
 
-const githubClientId = dev
-	? env.GITHUB_CLIENT_ID
-	: (env.GITHUB_CLIENT_ID_PROD ?? env.GITHUB_CLIENT_ID);
-const githubClientSecret = dev
-	? env.GITHUB_CLIENT_SECRET
-	: (env.GITHUB_CLIENT_SECRET_PROD ?? env.GITHUB_CLIENT_SECRET);
+type BetterAuthInstance = ReturnType<typeof betterAuth>;
 
-export const auth = betterAuth({
-	baseURL: env.ORIGIN || env.BETTER_AUTH_URL || undefined,
-	secret: env.BETTER_AUTH_SECRET,
-	database: drizzleAdapter(db, { provider: 'pg' }),
-	user: {
-		fields: {
-			name: 'username'
-		}
-	},
-	emailAndPassword: {
-		enabled: true,
-		requireEmailVerification: true,
-		sendResetPassword: async ({ user, url }, request) => {
-			const resolvedUrl = resolveUrl(url, request);
-			const result = await sendEmail({
-				to: user.email,
-				subject: 'Reset your password - Excalidraw App',
-				html: emailTemplate({
-					title: 'Reset your password',
-					body: `<p>You requested a password reset for your Excalidraw App account.</p>
-					<p>Click the button below to set a new password. This link expires in 1 hour.</p>`,
-					buttonText: 'Reset password',
-					buttonUrl: resolvedUrl
-				}),
-				text: textTemplate({
-					title: 'Reset your password',
-					body: 'You requested a password reset for your Excalidraw App account.\nClick the link below to set a new password. This link expires in 1 hour.',
-					actionLabel: 'Reset password',
-					actionUrl: resolvedUrl
-				})
-			});
-			if (!result.ok) {
-				console.error('Failed to send reset password email:', result.error);
-				throw new Error('Failed to send reset password email');
+let authInstance: BetterAuthInstance | null = null;
+
+function getAuth(): BetterAuthInstance {
+	// Lazy init: builds betterAuth on first request so env vars are read at request
+	// time. This keeps module import side-effect free, so a missing secret can't crash
+	// the Cloudflare Worker (or a production build) at load time.
+	if (authInstance) return authInstance;
+
+	const githubClientId = dev
+		? env.GITHUB_CLIENT_ID
+		: (env.GITHUB_CLIENT_ID_PROD ?? env.GITHUB_CLIENT_ID);
+	const githubClientSecret = dev
+		? env.GITHUB_CLIENT_SECRET
+		: (env.GITHUB_CLIENT_SECRET_PROD ?? env.GITHUB_CLIENT_SECRET);
+
+	authInstance = betterAuth({
+		baseURL: env.ORIGIN || env.BETTER_AUTH_URL || undefined,
+		secret: env.BETTER_AUTH_SECRET,
+		database: drizzleAdapter(db, { provider: 'pg' }),
+		user: {
+			fields: {
+				name: 'username'
 			}
 		},
-		resetPasswordTokenExpiresIn: 3600
-	},
-	emailVerification: {
-		sendVerificationEmail: async ({ user, url }, request) => {
-			const resolvedUrl = resolveUrl(url, request);
-			const result = await sendEmail({
-				to: user.email,
-				subject: 'Verify your email - Excalidraw App',
-				html: emailTemplate({
-					title: 'Welcome to Excalidraw App!',
-					body: `<p>Thanks for creating an account. Please verify your email address to get started.</p>`,
-					buttonText: 'Verify email',
-					buttonUrl: resolvedUrl
-				}),
-				text: textTemplate({
-					title: 'Welcome to Excalidraw App!',
-					body: 'Thanks for creating an account. Please verify your email address to get started.',
-					actionLabel: 'Verify email',
-					actionUrl: resolvedUrl
-				})
-			});
-			if (!result.ok) {
-				console.error('Failed to send verification email:', result.error);
-				throw new Error('Failed to send verification email');
-			}
-		}
-	},
-	socialProviders:
-		githubClientId && githubClientSecret
-			? {
-					github: {
-						clientId: githubClientId,
-						clientSecret: githubClientSecret
-					}
+		emailAndPassword: {
+			enabled: true,
+			requireEmailVerification: true,
+			sendResetPassword: async ({ user, url }, request) => {
+				const resolvedUrl = resolveUrl(url, request);
+				const result = await sendEmail({
+					to: user.email,
+					subject: 'Reset your password - Excalidraw App',
+					html: emailTemplate({
+						title: 'Reset your password',
+						body: `<p>You requested a password reset for your Excalidraw App account.</p>
+					<p>Click the button below to set a new password. This link expires in 1 hour.</p>`,
+						buttonText: 'Reset password',
+						buttonUrl: resolvedUrl
+					}),
+					text: textTemplate({
+						title: 'Reset your password',
+						body: 'You requested a password reset for your Excalidraw App account.\nClick the link below to set a new password. This link expires in 1 hour.',
+						actionLabel: 'Reset password',
+						actionUrl: resolvedUrl
+					})
+				});
+				if (!result.ok) {
+					console.error('Failed to send reset password email:', result.error);
+					throw new Error('Failed to send reset password email');
 				}
-			: undefined,
-	plugins: [sveltekitCookies(getRequestEvent)]
+			},
+			resetPasswordTokenExpiresIn: 3600
+		},
+		emailVerification: {
+			sendVerificationEmail: async ({ user, url }, request) => {
+				const resolvedUrl = resolveUrl(url, request);
+				const result = await sendEmail({
+					to: user.email,
+					subject: 'Verify your email - Excalidraw App',
+					html: emailTemplate({
+						title: 'Welcome to Excalidraw App!',
+						body: `<p>Thanks for creating an account. Please verify your email address to get started.</p>`,
+						buttonText: 'Verify email',
+						buttonUrl: resolvedUrl
+					}),
+					text: textTemplate({
+						title: 'Welcome to Excalidraw App!',
+						body: 'Thanks for creating an account. Please verify your email address to get started.',
+						actionLabel: 'Verify email',
+						actionUrl: resolvedUrl
+					})
+				});
+				if (!result.ok) {
+					console.error('Failed to send verification email:', result.error);
+					throw new Error('Failed to send verification email');
+				}
+			}
+		},
+		socialProviders:
+			githubClientId && githubClientSecret
+				? {
+						github: {
+							clientId: githubClientId,
+							clientSecret: githubClientSecret
+						}
+					}
+				: undefined,
+		plugins: [sveltekitCookies(getRequestEvent)]
+	});
+
+	return authInstance;
+}
+
+/**
+ * Proxy that lazily resolves `getAuth()` on any property access, mirroring the db
+ * module's pattern. All existing `auth.api.*` / `auth.handler` consumers keep working
+ * unchanged while env reads stay out of the module scope.
+ */
+export const auth = new Proxy({} as BetterAuthInstance, {
+	get(_, property, receiver) {
+		const value = Reflect.get(getAuth(), property, receiver);
+		return typeof value === 'function' ? value.bind(getAuth()) : value;
+	}
 });
 
 function resolveUrl(url: string, request?: Request): string {
