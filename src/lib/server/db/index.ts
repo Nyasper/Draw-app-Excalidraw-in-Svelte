@@ -20,6 +20,15 @@ function resolveDbUrl(): string {
 	return url;
 }
 
+function sanitizeUrl(url: string): string {
+	try {
+		const u = new URL(url);
+		return `${u.protocol}//${u.host}${u.pathname}`;
+	} catch {
+		return '<invalid>';
+	}
+}
+
 let dbInstance: PostgresJsDatabase<typeof schema> | null = null;
 
 function getDb(): PostgresJsDatabase<typeof schema> {
@@ -29,6 +38,18 @@ function getDb(): PostgresJsDatabase<typeof schema> {
 		// skips an extra pg_catalog round-trip on the edge.
 		const client = postgres(resolveDbUrl(), { max: 5, prepare: false, fetch_types: false });
 		dbInstance = drizzle(client, { schema });
+		if (!dev) {
+			// One-time diagnostic per isolate: which host we connected to and whether the
+			// relational query API used by the Better Auth drizzle adapter is available
+			// (a missing `db.query` silently makes session lookups return null).
+			const relational = ((dbInstance.query as { session?: unknown } | undefined) ?? undefined)
+				?.session
+				? 'yes'
+				: 'no';
+			console.log(
+				`[db] connected host=${sanitizeUrl(resolveDbUrl())} relationalSession=${relational}`
+			);
+		}
 	}
 	return dbInstance;
 }

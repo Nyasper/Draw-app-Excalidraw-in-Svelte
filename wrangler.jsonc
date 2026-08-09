@@ -21,6 +21,7 @@
 	"secrets": {
 		"required": [
 			"ORIGIN",
+			"DATABASE_URL",
 			"MY_DOMAIN",
 			"GITHUB_CLIENT_ID_PROD",
 			"BETTER_AUTH_SECRET",

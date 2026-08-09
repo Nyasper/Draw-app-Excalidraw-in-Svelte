@@ -63,6 +63,12 @@ function getAuth(): BetterAuthInstance {
 			},
 			resetPasswordTokenExpiresIn: 3600
 		},
+		// Avoid the session_data cookie-cache round trip: every session is read straight
+		// from the database. Prevents stale/expired JWT cookies from throwing inside
+		// getSession on Cloudflare Workers.
+		session: {
+			cookieCache: { enabled: false }
+		},
 		emailVerification: {
 			sendVerificationEmail: async ({ user, url }, request) => {
 				const resolvedUrl = resolveUrl(url, request);

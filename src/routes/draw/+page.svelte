@@ -81,7 +81,15 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ title, elements, appState, files })
 				});
+				if (res.status === 401) {
+					saveStatus = 'error';
+					goto(resolve('/login'));
+					return;
+				}
 				const json = await res.json();
+				if (!res.ok || json?.id == null) {
+					throw new Error('Create failed');
+				}
 				drawingId = json.id;
 				goto(resolve(`/draw/${drawingId}`), { replaceState: true });
 			}
