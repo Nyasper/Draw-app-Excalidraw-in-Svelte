@@ -27,9 +27,10 @@
 ## Environment
 
 - Copy `.env.example` to `.env` and fill in values. `.env` is gitignored.
-- Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+- Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CLIENT_ID_PROD`, `GITHUB_CLIENT_SECRET_PROD`.
 - `ORIGIN` is used by Better Auth (`auth.ts:baseURL`) for OAuth callbacks and email links. Route handlers derive the origin dynamically from `event.url.origin`, so `ORIGIN` is only needed if you use OAuth or want outbound email links to point to the correct domain.
 - `MY_DOMAIN` is the verified Resend domain used as the `from` address (`noreply@<MY_DOMAIN>`).
+- GitHub OAuth uses two credential sets because GitHub allows only one callback URL per OAuth app. In dev (`bun run dev`) `auth.ts` uses `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` (callback `http://localhost:5173/api/auth/callback/github`); in production builds it uses `GITHUB_CLIENT_ID_PROD`/`GITHUB_CLIENT_SECRET_PROD` (falling back to the dev vars), selected via SvelteKit's `dev` flag.
 
 ## Architecture
 

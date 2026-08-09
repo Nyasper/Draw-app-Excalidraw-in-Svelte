@@ -2,9 +2,18 @@ import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { env } from '$env/dynamic/private';
+
+import { dev } from '$app/environment';
 import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
+
+const githubClientId = dev
+	? env.GITHUB_CLIENT_ID
+	: (env.GITHUB_CLIENT_ID_PROD ?? env.GITHUB_CLIENT_ID);
+const githubClientSecret = dev
+	? env.GITHUB_CLIENT_SECRET
+	: (env.GITHUB_CLIENT_SECRET_PROD ?? env.GITHUB_CLIENT_SECRET);
 
 export const auth = betterAuth({
 	baseURL: env.ORIGIN || env.BETTER_AUTH_URL || undefined,
@@ -70,11 +79,11 @@ export const auth = betterAuth({
 		}
 	},
 	socialProviders:
-		env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+		githubClientId && githubClientSecret
 			? {
 					github: {
-						clientId: env.GITHUB_CLIENT_ID,
-						clientSecret: env.GITHUB_CLIENT_SECRET
+						clientId: githubClientId,
+						clientSecret: githubClientSecret
 					}
 				}
 			: undefined,
