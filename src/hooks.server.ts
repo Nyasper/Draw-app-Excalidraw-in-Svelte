@@ -1,9 +1,17 @@
 import type { Handle } from '@sveltejs/kit';
-import { building } from '$app/environment';
+import { building, dev } from '$app/environment';
 import { auth } from '$lib/server/auth';
+import { setDbConnectionString } from '$lib/server/db';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
+	// In production on Cloudflare Workers, the Postgres connection goes through the
+	// Hyperdrive binding, which is only available here via event.platform. The db module
+	// lazily connects on the first query, so this must run before anything touches the DB.
+	if (!dev && !building) {
+		setDbConnectionString(event.platform?.env.HYPERDRIVE?.connectionString ?? '');
+	}
+
 	try {
 		const session = await auth.api.getSession({ headers: event.request.headers });
 

@@ -1,0 +1,23 @@
+{
+	"name": "svelte-excalidraw-app",
+	"compatibility_date": "2025-06-12",
+	"compatibility_flags": ["nodejs_compat", "nodejs_als"],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"directory": ".svelte-kit/cloudflare",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	// Bindings are defined here so `wrangler deploy` and Workers Builds pick them up.
+	// Replace the `id` below with your real Hyperdrive config id (Cloudflare dashboard or
+	// `bunx wrangler hyperdrive create`).
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "4fabfdc2284c4020bdb952cf3ec4ca7c",
+			"localConnectionString": "postgres://root:mysecretpassword@localhost:5432/local"
+		}
+	]
+}

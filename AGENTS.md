@@ -11,6 +11,8 @@
 | `bun run dev`         | Start Vite dev server (port 5173)                                          |
 | `bun run build`       | Production build                                                           |
 | `bun run preview`     | Preview production build                                                   |
+| `bun run deploy`      | Build + deploy to Cloudflare Workers (`wrangler deploy`)                   |
+| `bun run dev:cf`      | Build + run the CF build locally via `wrangler dev` (port 8787)            |
 | `bun run check`       | Type-check (runs `svelte-kit sync` then `svelte-check`)                    |
 | `bun run check:watch` | Type-check in watch mode                                                   |
 | `bun run lint`        | Lint + format check (`prettier --check . && eslint .`)                     |
@@ -30,6 +32,8 @@
 - Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CLIENT_ID_PROD`, `GITHUB_CLIENT_SECRET_PROD`.
 - `ORIGIN` is used by Better Auth (`auth.ts:baseURL`) for OAuth callbacks and email links. Route handlers derive the origin dynamically from `event.url.origin`, so `ORIGIN` is only needed if you use OAuth or want outbound email links to point to the correct domain.
 - `MY_DOMAIN` is the verified Resend domain used as the `from` address (`noreply@<MY_DOMAIN>`).
+- **Production runs on Cloudflare Workers.** Env vars/secrets (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`, `ORIGIN`, `GITHUB_CLIENT_ID_PROD`, `GITHUB_CLIENT_SECRET_PROD`) are set as **Workers secrets** in the Cloudflare dashboard (Worker → Settings → Variables and Secrets) and read at runtime via `$env/dynamic/private`. Set `ORIGIN=https://nyasper.dev` in prod.
+- **Postgres in production goes through Hyperdrive.** The `HYPERDRIVE` binding is declared in `wrangler.jsonc`; `hooks.server.ts` injects its connection string via `setDbConnectionString()` before any query runs. Local dev (`bun run dev`) still uses the `DATABASE_URL` in `.env` (Docker Postgres).
 - GitHub OAuth uses two credential sets because GitHub allows only one callback URL per OAuth app. In dev (`bun run dev`) `auth.ts` uses `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` (callback `http://localhost:5173/api/auth/callback/github`); in production builds it uses `GITHUB_CLIENT_ID_PROD`/`GITHUB_CLIENT_SECRET_PROD` (falling back to the dev vars), selected via SvelteKit's `dev` flag.
 
 ## Architecture
@@ -38,8 +42,8 @@
 src/
   app.css                    Global CSS variables (dark theme Excalidraw-style) + reset
   app.html                   HTML shell with Inter font
-  app.d.ts                   App.Locals typed with User/Session
-  hooks.server.ts            Better Auth session hook + svelteKitHandler
+  app.d.ts                   App.Locals + App.Platform typed with User/Session
+  hooks.server.ts            Better Auth session hook + svelteKitHandler + injects Hyperdrive URL
   lib/
     assets/favicon.svg
     components/
@@ -50,7 +54,7 @@ src/
       auth.ts                 Better Auth config (Drizzle adapter, email/password + OAuth, email verificacion, password reset)
       email.ts                Resend SDK wrapper for sending transactional emails
       db/
-        index.ts              Drizzle ORM + postgres.js connection (uses process.env for jiti compat)
+        index.ts              Drizzle ORM + postgres.js lazy connection (Proxy). URL from $env/dynamic/private or Hyperdrive
         schema.ts             App tables: folder, drawing + re-exports auth.schema
         auth.schema.ts        Auth tables: user, session, account, verification (generated)
         queries.ts            Reusable DB query functions (CRUD for folders & drawings)
@@ -114,6 +118,13 @@ src/
 - **Dashboard**: Drag-to-select with mouse rectangle, Ctrl+click (toggle), Shift+click (range). View toggle between grid (cards) and list (table with dates). Bulk delete for selected drawings.
 - **Resend**: SDK wrapper in `src/lib/server/email.ts`. Uses idempotency keys, returns `{ ok, error/id }` tuple. Never called from browser (API key protection).
 
+## Deployment
+
+- **Platform**: Cloudflare Workers with Static Assets (`@sveltejs/adapter-cloudflare`). Output goes to `.svelte-kit/cloudflare`.
+- **CI**: Cloudflare **Workers Builds** (Git integration) connected to this GitHub repo — every push to the configured branch builds with `bun install && bun run build` and deploys automatically. Manual deploys are possible with `bun run deploy` and local CF testing with `bun run dev:cf`.
+- **`wrangler.jsonc`**: single source of truth for the worker (`main`, `assets`, `compatibility_flags: ["nodejs_compat", "nodejs_als"]`, `HYPERDRIVE` binding id). Replace the placeholder id with the real Hyperdrive config.
+- **Cut-over note**: the Cloudflare adapter lives on branch `cf`. Merging it to `main` makes the build Vercel-incompatible, so cut over (merge + DNS move to Cloudflare) only when ready, then disable Vercel. Rollback is `wrangler rollback`.
+
 ## Framework quirks
 
 - **Svelte 5 runes mode is forced** (`svelte.config.js`). Use `$state`, `$derived`, `$effect`, `{@render children()}`, `$props()`. No `$:` reactive declarations or `<slot>`.
@@ -132,5 +143,6 @@ src/
 
 ## Gotchas
 
-- **`db/index.ts` uses `$env/static/private`** for DATABASE_URL. For production on Vercel, this is processed at build time and works fine.
-- **Runtime server packages** (`better-auth`, `drizzle-orm`, `postgres`) are in `dependencies` (not `devDependencies`) so they survive Vercel's production install pruning.
+- **`db/index.ts` uses `$env/dynamic/private`** for the DB URL. `$env/static/private` is NOT usable on Cloudflare Workers — vars/secrets only exist at runtime. The prod connection string comes from the `HYPERDRIVE` binding injected in `hooks.server.ts`; local dev falls back to `DATABASE_URL`.
+- **Cloudflare binds things at runtime**: Excalidraw stays client-side (large). Server bundle (`_worker.js`) is built from `node_modules`; `postgres` resolves its `workerd` build via conditional exports, so it must be kept in `dependencies` (not externalized).
+- **`tsconfig.json` sets `skipLibCheck: true`** to avoid type errors from third-party `.d.ts` files (drizzle-orm/mysql2, `@excalidraw/*`, `browser-fs-access`). Do not set it back to `false`.

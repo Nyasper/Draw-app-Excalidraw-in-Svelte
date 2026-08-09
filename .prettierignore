@@ -8,3 +8,6 @@ bun.lockb
 # Miscellaneous
 /static/
 /drizzle/
+
+# Agent skills (contain non-formattable Svelte 4 code snippets)
+/.agents/

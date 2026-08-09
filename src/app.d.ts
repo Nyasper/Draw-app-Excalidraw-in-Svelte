@@ -9,10 +9,17 @@ declare global {
 			session?: Session;
 		}
 
+		interface Platform {
+			env: {
+				HYPERDRIVE?: {
+					connectionString: string;
+				};
+			};
+		}
+
 		// interface Error {}
 		// interface PageData {}
 		// interface PageState {}
-		// interface Platform {}
 	}
 }
 
