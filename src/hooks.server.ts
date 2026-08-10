@@ -1,17 +1,9 @@
 import type { Handle } from '@sveltejs/kit';
-import { building, dev } from '$app/environment';
+import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
-import { db, setDbConnectionString } from '$lib/server/db';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
-	// In production on Cloudflare Workers, the Postgres connection goes through the
-	// Hyperdrive binding, which is only available here via event.platform. The db module
-	// lazily connects on the first query, so this must run before anything touches the DB.
-	if (!dev && !building) {
-		setDbConnectionString(event.platform?.env.HYPERDRIVE?.connectionString ?? '');
-	}
-
 	try {
 		const session = await auth.api.getSession({ headers: event.request.headers });
 
@@ -29,24 +21,24 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 					: cause && typeof cause === 'object'
 						? JSON.stringify(cause).slice(0, 500)
 						: String(cause ?? '');
-		let relationalSession: string;
-		try {
-			relationalSession = (db.query as { session?: unknown } | undefined)?.session ? 'yes' : 'no';
-		} catch {
-			relationalSession = 'error';
-		}
 		console.error('Session lookup failed', {
 			path: event.url.pathname,
 			message: err instanceof Error ? err.message : String(err),
 			cause: causeMsg,
-			hyperdrive: !!event.platform?.env?.HYPERDRIVE,
-			relationalSession,
 			stack:
 				err instanceof Error ? (err.stack || '').split('\n').slice(0, 5).join(' | ') : undefined
 		});
 	}
 
-	return svelteKitHandler({ event, resolve, auth, building });
+	const response = await svelteKitHandler({ event, resolve, auth, building });
+
+	// Better Auth responses have no Cache-Control, and Cloudflare edge-caches dynamic
+	// GET responses like /api/auth/get-session. Never cache auth traffic.
+	if (event.url.pathname.startsWith('/api/auth/')) {
+		response.headers.set('Cache-Control', 'no-store');
+	}
+
+	return response;
 };
 
 export const handle: Handle = handleBetterAuth;

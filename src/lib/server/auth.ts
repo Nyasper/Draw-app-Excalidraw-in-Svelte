@@ -26,7 +26,7 @@ function getAuth(): BetterAuthInstance {
 		: (env.GITHUB_CLIENT_SECRET_PROD ?? env.GITHUB_CLIENT_SECRET);
 
 	authInstance = betterAuth({
-		baseURL: env.ORIGIN || env.BETTER_AUTH_URL || undefined,
+		baseURL: (env.ORIGIN || env.BETTER_AUTH_URL || undefined) as string | undefined,
 		secret: env.BETTER_AUTH_SECRET,
 		database: drizzleAdapter(db, { provider: 'pg' }),
 		user: {
@@ -104,9 +104,9 @@ function getAuth(): BetterAuthInstance {
 					}
 				: undefined,
 		plugins: [sveltekitCookies(getRequestEvent)]
-	});
+	}) as unknown as BetterAuthInstance;
 
-	return authInstance;
+	return authInstance!;
 }
 
 /**

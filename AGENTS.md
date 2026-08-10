@@ -32,8 +32,8 @@
 - Required vars: `DATABASE_URL`, `ORIGIN`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`. Optional: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CLIENT_ID_PROD`, `GITHUB_CLIENT_SECRET_PROD`.
 - `ORIGIN` is used by Better Auth (`auth.ts:baseURL`) for OAuth callbacks and email links. Route handlers derive the origin dynamically from `event.url.origin`, so `ORIGIN` is only needed if you use OAuth or want outbound email links to point to the correct domain.
 - `MY_DOMAIN` is the verified Resend domain used as the `from` address (`noreply@<MY_DOMAIN>`).
-- **Production runs on Cloudflare Workers.** Env vars/secrets (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`, `ORIGIN`, `GITHUB_CLIENT_ID_PROD`, `GITHUB_CLIENT_SECRET_PROD`) are set as **Workers secrets** in the Cloudflare dashboard (Worker → Settings → Variables and Secrets) and read at runtime via `$env/dynamic/private`. Set `ORIGIN=https://excalidraw-app.nyasper.dev` in prod.
-- **Postgres in production goes through Hyperdrive.** The `HYPERDRIVE` binding is declared in `wrangler.jsonc`; `hooks.server.ts` injects its connection string via `setDbConnectionString()` before any query runs. Local dev (`bun run dev`) still uses the `DATABASE_URL` in `.env` (Docker Postgres).
+- **Production runs on Cloudflare Workers.** Env vars/secrets (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `MY_DOMAIN`, `ORIGIN`, `DATABASE_URL`, `GITHUB_CLIENT_ID_PROD`, `GITHUB_CLIENT_SECRET_PROD`) are set as **Workers secrets** in the Cloudflare dashboard (Worker → Settings → Variables and Secrets) and read at runtime via `$env/dynamic/private`. Set `ORIGIN=https://excalidraw-app.nyasper.dev` in prod.
+- **Postgres in production connects directly to the Neon origin** via the `DATABASE_URL` secret (no Hyperdrive in the middle). Use the **direct** Neon endpoint (without `-pooler`) for consistent reads (the pooled endpoint can route reads to lagging replicas, which broke `findSession`). Local dev (`bun run dev`) still uses the `DATABASE_URL` in `.env` (Docker Postgres).
 - GitHub OAuth uses two credential sets because GitHub allows only one callback URL per OAuth app. In dev (`bun run dev`) `auth.ts` uses `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` (callback `http://localhost:5173/api/auth/callback/github`); in production builds it uses `GITHUB_CLIENT_ID_PROD`/`GITHUB_CLIENT_SECRET_PROD` (falling back to the dev vars), selected via SvelteKit's `dev` flag.
 
 ## Architecture
@@ -43,7 +43,7 @@ src/
   app.css                    Global CSS variables (dark theme Excalidraw-style) + reset
   app.html                   HTML shell with Inter font
   app.d.ts                   App.Locals + App.Platform typed with User/Session
-  hooks.server.ts            Better Auth session hook + svelteKitHandler + injects Hyperdrive URL
+  hooks.server.ts            Better Auth session hook + svelteKitHandler + no-store on /api/auth/*
   lib/
     assets/favicon.svg
     components/
@@ -54,7 +54,7 @@ src/
       auth.ts                 Better Auth config (Drizzle adapter, email/password + OAuth, email verificacion, password reset)
       email.ts                Resend SDK wrapper for sending transactional emails
       db/
-        index.ts              Drizzle ORM + postgres.js lazy connection (Proxy). URL from $env/dynamic/private or Hyperdrive
+        index.ts              Drizzle ORM + postgres.js lazy connection (Proxy). URL from $env/dynamic/private
         schema.ts             App tables: folder, drawing + re-exports auth.schema
         auth.schema.ts        Auth tables: user, session, account, verification (generated)
         queries.ts            Reusable DB query functions (CRUD for folders & drawings)
@@ -122,7 +122,7 @@ src/
 
 - **Platform**: Cloudflare Workers with Static Assets (`@sveltejs/adapter-cloudflare`). Output goes to `.svelte-kit/cloudflare`.
 - **CI**: Cloudflare **Workers Builds** (Git integration) connected to this GitHub repo — every push to the configured branch builds with `bun install && bun run build` and deploys automatically. Manual deploys are possible with `bun run deploy` and local CF testing with `bun run dev:cf`.
-- **`wrangler.jsonc`**: single source of truth for the worker (`main`, `assets`, `compatibility_flags: ["nodejs_compat", "nodejs_als"]`, `HYPERDRIVE` binding id). Replace the placeholder id with the real Hyperdrive config. `secrets.required` lists all secrets that must exist on the worker for any deploy to pass.
+- **`wrangler.jsonc`**: single source of truth for the worker (`main`, `assets`, `compatibility_flags: ["nodejs_compat", "nodejs_als"]`). `secrets.required` lists all secrets that must exist on the worker for any deploy to pass.
 - **Rollback**: `wrangler rollback` restores the previous deployed version if a deploy misbehaves.
 
 ## Framework quirks
@@ -143,6 +143,6 @@ src/
 
 ## Gotchas
 
-- **`db/index.ts` uses `$env/dynamic/private`** for the DB URL. `$env/static/private` is NOT usable on Cloudflare Workers — vars/secrets only exist at runtime. The prod connection string comes from the `HYPERDRIVE` binding injected in `hooks.server.ts`; local dev falls back to `DATABASE_URL`.
+- **`db/index.ts` uses `$env/dynamic/private`** for the DB URL. `$env/static/private` is NOT usable on Cloudflare Workers — vars/secrets only exist at runtime. The prod connection string comes from the `DATABASE_URL` **secret** (direct Neon origin, no `-pooler`); local dev (`vite`) falls back to the `DATABASE_URL` in `.env` (Docker Postgres).
 - **Cloudflare binds things at runtime**: Excalidraw stays client-side (large). Server bundle (`_worker.js`) is built from `node_modules`; `postgres` resolves its `workerd` build via conditional exports, so it must be kept in `dependencies` (not externalized).
 - **`tsconfig.json` sets `skipLibCheck: true`** to avoid type errors from third-party `.d.ts` files (drizzle-orm/mysql2, `@excalidraw/*`, `browser-fs-access`). Do not set it back to `false`.
