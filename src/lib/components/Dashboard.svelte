@@ -2,6 +2,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
+	import { toggleSelection as toggleSelectionState } from '$lib/selection';
 
 	interface DrawingItem {
 		id: number;
@@ -87,22 +88,17 @@
 	}
 
 	function toggleSelection(itemId: number, ctrl: boolean, shift: boolean) {
-		if (shift && lastClickedId !== null) {
-			const ids = drawings.map((d) => d.id);
-			const startIdx = ids.indexOf(lastClickedId);
-			const endIdx = ids.indexOf(itemId);
-			if (startIdx === -1 || endIdx === -1) return;
-			const range = ids.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
-			if (!ctrl) selectedIds.clear();
-			for (const id of range) selectedIds.add(id);
-		} else if (ctrl) {
-			if (selectedIds.has(itemId)) selectedIds.delete(itemId);
-			else selectedIds.add(itemId);
-		} else {
-			selectedIds.clear();
-			selectedIds.add(itemId);
-		}
-		lastClickedId = itemId;
+		const { selection, lastClickedId: nextLastClickedId } = toggleSelectionState({
+			selectedIds,
+			orderedIds: drawings.map((d) => d.id),
+			lastClickedId,
+			itemId,
+			ctrl,
+			shift
+		});
+		selectedIds.clear();
+		for (const id of selection) selectedIds.add(id);
+		lastClickedId = nextLastClickedId;
 	}
 
 	function handleMouseDown(e: MouseEvent) {

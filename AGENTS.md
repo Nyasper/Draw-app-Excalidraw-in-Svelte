@@ -17,6 +17,8 @@
 | `bun run check:watch` | Type-check in watch mode                                                   |
 | `bun run lint`        | Lint + format check (`prettier --check . && eslint .`)                     |
 | `bun run format`      | Auto-format with Prettier                                                  |
+| `bun run test`        | Run the Vitest suite (sets up the test DB automatically)                   |
+| `bun run test:watch`  | Run Vitest in watch mode                                                   |
 | `bun run db:start`    | Start PostgreSQL 18 via Docker Compose                                     |
 | `bun run db:push`     | Push Drizzle schema directly to DB (no migration files)                    |
 | `bun run db:studio`   | Open Drizzle Studio                                                        |
@@ -139,7 +141,11 @@ src/
 
 ## Testing
 
-- **No test framework is configured.** There are no test files, no vitest, no jest, no playwright.
+- **Vitest** (config `vitest.config.ts`, SvelteKit-aware via the `sveltekit()` Vite plugin). Tests live in `tests/**/*.test.ts`.
+- **Unit tests** (`tests/unit/`): pure logic — dashboard selection (`src/lib/selection.ts`), guest localStorage helpers (`src/lib/guest.ts`), and the Resend wrapper (`src/lib/server/email.ts`, mocked Resend).
+- **DB integration tests** (`tests/integration/`): exercise `src/lib/server/db/queries.ts` and the API endpoints (`/draw`, `/draw/[id]`, `/folders`). They mock `$env/dynamic/private` with a dedicated test DB URL.
+- **Test DB**: `tests/global-setup.ts` drops/recreates `svelte_excalidraw_test` (Postgres on localhost:5432, same as local dev) and pushes the Drizzle schema with `drizzle-kit push --force`. Requires Postgres running (`bun run db:start`); unit tests still pass without it. Any Postgres 18 local instance is fine.
+- No E2E/component tests yet (deferred).
 
 ## Gotchas
 

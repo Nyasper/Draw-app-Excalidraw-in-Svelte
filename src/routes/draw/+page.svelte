@@ -10,6 +10,8 @@
 	import { goto } from '$app/navigation';
 	import type { PageProps } from './$types';
 	import { browser } from '$app/environment';
+	import { GUEST_STORAGE_KEY, loadGuestData, saveGuestData } from '$lib/guest';
+	import type { ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
 
 	let { data }: PageProps = $props();
 
@@ -23,19 +25,9 @@
 	const guest = $derived(!user);
 
 	function getLocalData() {
-		if (!browser) return;
+		if (!browser) return null;
 		if (!guest) return null;
-		const saved = localStorage.getItem('excalidraw-guest');
-		if (!saved) return null;
-		try {
-			const parsed = JSON.parse(saved);
-			return {
-				...parsed,
-				appState: { ...parsed.appState, collaborators: new Map() }
-			};
-		} catch {
-			return null;
-		}
+		return loadGuestData(localStorage.getItem(GUEST_STORAGE_KEY));
 	}
 
 	function handleChange(
@@ -44,7 +36,7 @@
 		files: BinaryFiles
 	) {
 		if (guest) {
-			localStorage.setItem('excalidraw-guest', JSON.stringify({ elements, appState, files }));
+			localStorage.setItem(GUEST_STORAGE_KEY, saveGuestData({ elements, appState, files }));
 			return;
 		}
 
@@ -148,7 +140,11 @@
 	</div>
 
 	<div class="canvas-wrapper">
-		<Excalidraw bind:excalidrawAPI initialData={getLocalData()} onChange={handleChange} />
+		<Excalidraw
+			bind:excalidrawAPI
+			initialData={getLocalData() as ExcalidrawInitialDataState | null}
+			onChange={handleChange}
+		/>
 	</div>
 </div>
 
