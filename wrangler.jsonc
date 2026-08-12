@@ -1,7 +1,11 @@
 {
 	"name": "svelte-excalidraw-app",
 	"compatibility_date": "2025-06-12",
-	"compatibility_flags": ["nodejs_compat", "nodejs_als"],
+	"compatibility_flags": [
+		"nodejs_compat",
+		"nodejs_als",
+		"no_handle_cross_request_promise_resolution"
+	],
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"assets": {
 		"directory": ".svelte-kit/cloudflare",
