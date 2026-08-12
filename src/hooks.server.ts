@@ -1,6 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
+import { primeDbConnection } from '$lib/server/db';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
@@ -10,6 +11,18 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		if (session) {
 			event.locals.session = session.session;
 			event.locals.user = session.user;
+		} else {
+			// Guests skip the session lookup, so no DB read happens before any route handler
+			// runs. Warm up the postgres socket in THIS request's context — writes are never
+			// retried, so they must not be the first statement of a request.
+			try {
+				await primeDbConnection();
+			} catch (err) {
+				console.error('DB warm-up failed', {
+					path: event.url.pathname,
+					message: err instanceof Error ? err.message : String(err)
+				});
+			}
 		}
 	} catch (err) {
 		const cause = (err as { cause?: unknown })?.cause;
