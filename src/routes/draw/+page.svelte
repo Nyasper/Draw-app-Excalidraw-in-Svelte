@@ -6,6 +6,7 @@
 	import CanvasToolbar from '$lib/components/CanvasToolbar.svelte';
 	import { GUEST_STORAGE_KEY, loadGuestData, saveGuestData } from '$lib/guest';
 	import { SaveController } from '$lib/canvas-save.svelte';
+	import { loading } from '$lib/loading.svelte';
 	import * as api from '$lib/canvas/api';
 	import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 	import type {
@@ -61,9 +62,12 @@
 
 		try {
 			if (drawingId) {
-				await api.updateDrawing(drawingId, { title, ...snap });
+				const id = drawingId;
+				await loading.withPending('save', () => api.updateDrawing(id, { title, ...snap }));
 			} else {
-				const { id } = await api.createDrawing({ title, ...snap });
+				const { id } = await loading.withPending('save', () =>
+					api.createDrawing({ title, ...snap })
+				);
 				drawingId = id;
 				goto(resolve(`/draw/${id}`), { replaceState: true });
 			}

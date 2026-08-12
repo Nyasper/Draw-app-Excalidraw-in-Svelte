@@ -2,6 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { folderIcon, trashIcon } from '../icons.svelte';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '../Spinner.svelte';
 	import type { DashboardHandlers, FolderItem } from '$lib/dashboard/types';
 
 	interface Props {
@@ -45,16 +47,37 @@
 					}}
 					aria-label="Delete folder"
 				>
-					{@render trashIcon(14)}
+					{#if loading.isPending(`folder:${f.id}`)}
+						<Spinner size={14} />
+					{:else}
+						{@render trashIcon(14)}
+					{/if}
 				</button>
 			</a>
 		{:else}
 			<p class="folder-empty">No folders yet.</p>
 		{/each}
 	</nav>
-	<form method="post" action="?/createFolder" use:enhance class="new-folder-form">
+	<form
+		method="post"
+		action="?/createFolder"
+		use:enhance={() => {
+			loading.startKey('folder-new');
+			return async ({ update }) => {
+				await update();
+				loading.stopKey('folder-new');
+			};
+		}}
+		class="new-folder-form"
+	>
 		<input type="text" name="folderName" placeholder="New folder..." required />
-		<button class="btn btn-primary" type="submit">+</button>
+		<button class="btn btn-primary" type="submit" disabled={loading.isPending('folder-new')}>
+			{#if loading.isPending('folder-new')}
+				<Spinner size={14} />
+			{:else}
+				+
+			{/if}
+		</button>
 	</form>
 </aside>
 

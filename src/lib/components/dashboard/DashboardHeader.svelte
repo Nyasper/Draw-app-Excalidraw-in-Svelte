@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '../Spinner.svelte';
 	import type { DashboardHandlers, FolderItem, ViewMode } from '$lib/dashboard/types';
 
 	interface Props {
@@ -31,14 +33,28 @@
 	<div class="header-actions">
 		{#if selectedCount > 0}
 			<span class="selection-count">{selectedCount} selected</span>
-			<button class="btn btn-danger" onclick={handlers.deleteSelected}>Delete</button>
+			<button
+				class="btn btn-danger"
+				disabled={loading.isPending('drawings-bulk')}
+				onclick={handlers.deleteSelected}
+			>
+				{#if loading.isPending('drawings-bulk')}
+					<Spinner />
+				{:else}
+					Delete
+				{/if}
+			</button>
 			{#if folders.length > 0}
 				<div class="move-folder-wrap">
 					<button class="btn btn-secondary" onclick={onToggleMoveFolder}>Move to folder</button>
 					{#if moveFolderOpen}
 						<div class="folder-dropdown">
 							{#each folders as f (f.id)}
-								<button class="folder-dropdown-item" onclick={() => handlers.moveSelected(f.id)}>
+								<button
+									class="folder-dropdown-item"
+									disabled={loading.isPending('drawings-bulk')}
+									onclick={() => handlers.moveSelected(f.id)}
+								>
 									{f.name}
 								</button>
 							{/each}
@@ -47,13 +63,31 @@
 				</div>
 			{/if}
 			{#if selectedHaveFolder}
-				<button class="btn btn-secondary" onclick={() => handlers.moveSelected(null)}>
-					Remove from folder
+				<button
+					class="btn btn-secondary"
+					disabled={loading.isPending('drawings-bulk')}
+					onclick={() => handlers.moveSelected(null)}
+				>
+					{#if loading.isPending('drawings-bulk')}
+						<Spinner />
+					{:else}
+						Remove from folder
+					{/if}
 				</button>
 			{/if}
 		{:else}
 			{@render viewToggle()}
-			<button class="btn btn-primary" onclick={handlers.newDrawing}>New drawing</button>
+			<button
+				class="btn btn-primary"
+				disabled={loading.isPending('new-drawing')}
+				onclick={handlers.newDrawing}
+			>
+				{#if loading.isPending('new-drawing')}
+					<Spinner />
+				{:else}
+					New drawing
+				{/if}
+			</button>
 		{/if}
 	</div>
 </div>

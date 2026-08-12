@@ -4,6 +4,7 @@
 	import Excalidraw from '$lib/components/Excalidraw.svelte';
 	import CanvasToolbar from '$lib/components/CanvasToolbar.svelte';
 	import { SaveController } from '$lib/canvas-save.svelte';
+	import { loading } from '$lib/loading.svelte';
 	import * as api from '$lib/canvas/api';
 	import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 	import type {
@@ -63,7 +64,9 @@
 		save.begin();
 
 		try {
-			await api.updateDrawing(drawingId, { title, ...snap });
+			await loading.withPending('save', () =>
+				api.updateDrawing(drawingId, { title, ...snap })
+			);
 			save.succeed();
 		} catch {
 			save.fail();
@@ -78,7 +81,7 @@
 
 	async function handleDelete() {
 		if (!confirm('Delete this drawing?')) return;
-		await api.deleteDrawing(drawingId);
+		await loading.withPending('delete', () => api.deleteDrawing(drawingId));
 		goto(resolve('/'));
 	}
 

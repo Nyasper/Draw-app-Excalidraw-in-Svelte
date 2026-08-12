@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { folderIcon, trashIcon } from '../icons.svelte';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '../Spinner.svelte';
 	import type { DashboardHandlers, DrawingItem, ViewMode } from '$lib/dashboard/types';
 	import type { Rect } from '$lib/dashboard/geometry';
 
@@ -110,6 +112,7 @@
 		role="button"
 		tabindex="0"
 		aria-label="Delete drawing"
+		aria-busy={loading.isPending(`drawing:${d.id}`) || undefined}
 		onclick={(e) => {
 			e.preventDefault();
 			e.stopPropagation();
@@ -123,7 +126,11 @@
 			}
 		}}
 	>
-		{@render trashIcon(14)}
+		{#if loading.isPending(`drawing:${d.id}`)}
+			<Spinner size={14} />
+		{:else}
+			{@render trashIcon(14)}
+		{/if}
 	</span>
 {/snippet}
 

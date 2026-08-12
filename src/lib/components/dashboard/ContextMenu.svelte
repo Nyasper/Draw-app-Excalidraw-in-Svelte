@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '../Spinner.svelte';
 	import type {
 		ContextMenuState,
 		DashboardHandlers,
@@ -35,16 +37,21 @@
 		{#if menu.type === 'drawing'}
 			{#if !selectionMode}
 				<a href={resolve(`/draw/${menu.id}`)} class="context-item" role="menuitem"> Open </a>
-				<button
-					class="context-item"
-					role="menuitem"
-					onclick={() => {
-						handlers.renameDrawing(menu.id, menu.title);
-						handlers.close();
-					}}
-				>
+			<button
+				class="context-item"
+				role="menuitem"
+				disabled={loading.isPending(`drawing:${menu.id}`)}
+				onclick={() => {
+					handlers.renameDrawing(menu.id, menu.title);
+					handlers.close();
+				}}
+			>
+				{#if loading.isPending(`drawing:${menu.id}`)}
+					<Spinner size={14} />
+				{:else}
 					Rename
-				</button>
+				{/if}
+			</button>
 			{/if}
 			<button
 				class="context-item"
@@ -75,6 +82,7 @@
 							<button
 								class="context-item"
 								role="menuitem"
+								disabled={loading.isPending('drawings-bulk') || loading.isPending(`drawing:${menu.id}`)}
 								onclick={() => {
 									if (selectionMode) handlers.moveSelected(f.id);
 									else handlers.moveDrawing(menu.id, f.id);
@@ -91,6 +99,7 @@
 				<button
 					class="context-item"
 					role="menuitem"
+					disabled={loading.isPending('drawings-bulk') || loading.isPending(`drawing:${menu.id}`)}
 					onclick={() => {
 						if (selectionMode) handlers.moveSelected(null);
 						else handlers.moveDrawing(menu.id, null);
@@ -104,6 +113,7 @@
 			<button
 				class="context-item context-danger"
 				role="menuitem"
+				disabled={loading.isPending(`drawing:${menu.id}`)}
 				onclick={async () => {
 					const id = menu.id;
 					handlers.close();
@@ -112,50 +122,74 @@
 					else handlers.deleteDrawing(id);
 				}}
 			>
-				Delete
+				{#if loading.isPending(`drawing:${menu.id}`)}
+					<Spinner size={14} />
+				{:else}
+					Delete
+				{/if}
 			</button>
 		{:else if menu.type === 'folder'}
 			<button
 				class="context-item"
 				role="menuitem"
+				disabled={loading.isPending(`folder:${menu.id}`)}
 				onclick={() => {
 					handlers.renameFolder(menu.id, menu.title);
 					handlers.close();
 				}}
 			>
-				Rename
+				{#if loading.isPending(`folder:${menu.id}`)}
+					<Spinner size={14} />
+				{:else}
+					Rename
+				{/if}
 			</button>
 			<button
 				class="context-item context-danger"
 				role="menuitem"
+				disabled={loading.isPending(`folder:${menu.id}`)}
 				onclick={() => {
 					handlers.deleteFolder(menu.id, menu.title);
 					handlers.close();
 				}}
 			>
-				Delete
+				{#if loading.isPending(`folder:${menu.id}`)}
+					<Spinner size={14} />
+				{:else}
+					Delete
+				{/if}
 			</button>
 		{:else if menu.type === 'dashboard'}
 			<button
 				class="context-item"
 				role="menuitem"
+				disabled={loading.isPending('new-drawing')}
 				onclick={() => {
 					handlers.close();
 					handlers.newDrawing();
 				}}
 			>
-				New drawing
+				{#if loading.isPending('new-drawing')}
+					<Spinner size={14} />
+				{:else}
+					New drawing
+				{/if}
 			</button>
 		{:else if menu.type === 'sidebar'}
 			<button
 				class="context-item"
 				role="menuitem"
+				disabled={loading.isPending('folder-new')}
 				onclick={() => {
 					handlers.close();
 					handlers.newFolder();
 				}}
 			>
-				New folder
+				{#if loading.isPending('folder-new')}
+					<Spinner size={14} />
+				{:else}
+					New folder
+				{/if}
 			</button>
 			<div class="context-menu-divider"></div>
 			{#if menu.id}
@@ -164,12 +198,17 @@
 				<button
 					class="context-item context-danger"
 					role="menuitem"
+					disabled={loading.isPending(`folder:${folderId}`)}
 					onclick={() => {
 						handlers.deleteFolder(folderId, folderName);
 						handlers.close();
 					}}
 				>
-					Remove folder
+					{#if loading.isPending(`folder:${folderId}`)}
+						<Spinner size={14} />
+					{:else}
+						Remove folder
+					{/if}
 				</button>
 			{:else}
 				<button
@@ -185,12 +224,17 @@
 							<button
 								class="context-item context-danger"
 								role="menuitem"
+								disabled={loading.isPending(`folder:${f.id}`)}
 								onclick={() => {
 									handlers.deleteFolder(f.id, f.name);
 									handlers.close();
 								}}
 							>
-								{f.name}
+								{#if loading.isPending(`folder:${f.id}`)}
+									<Spinner size={14} />
+								{:else}
+									{f.name}
+								{/if}
 							</button>
 						{/each}
 					</div>

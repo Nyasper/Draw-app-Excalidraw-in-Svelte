@@ -2,6 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { authClient } from '$lib/auth-client';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
@@ -15,7 +17,17 @@
 	<div class="auth-card">
 		<h1>Register</h1>
 
-		<form method="post" action="?/signUpEmail" use:enhance>
+		<form
+			method="post"
+			action="?/signUpEmail"
+			use:enhance={() => {
+				loading.startKey('sign-up');
+				return async ({ update }) => {
+					await update();
+					loading.stopKey('sign-up');
+				};
+			}}
+		>
 			<label>
 				Username
 				<input type="text" name="username" required />
@@ -32,7 +44,17 @@
 				Confirm password
 				<input type="password" name="passwordConfirm" required minlength="8" />
 			</label>
-			<button class="btn btn-primary" type="submit">Create account</button>
+			<button
+				class="btn btn-primary"
+				type="submit"
+				disabled={loading.isPending('sign-up')}
+			>
+				{#if loading.isPending('sign-up')}
+					<Spinner />
+				{:else}
+					Create account
+				{/if}
+			</button>
 		</form>
 
 		{#if form?.message}
@@ -52,7 +74,12 @@
 
 		<button
 			class="btn btn-secondary"
-			onclick={() => authClient.signIn.social({ provider: 'github', callbackURL: '/' })}
+			disabled={loading.isPending('sign-up')}
+			onclick={() =>
+				loading.withPending('sign-up', () =>
+					authClient.signIn.social({ provider: 'github', callbackURL: '/' })
+				)
+			}
 		>
 			<svg class="github-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 				<path
@@ -62,7 +89,11 @@
 					fill="currentColor"
 				/>
 			</svg>
-			Sign up with GitHub
+			{#if loading.isPending('sign-up')}
+				<Spinner />
+			{:else}
+				Sign up with GitHub
+			{/if}
 		</button>
 
 		<p class="switch">

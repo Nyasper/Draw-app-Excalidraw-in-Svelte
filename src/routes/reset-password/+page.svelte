@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { PageProps } from './$types';
 
 	let { form, data }: PageProps = $props();
@@ -14,7 +16,17 @@
 	<div class="auth-card">
 		<h1>Reset your password</h1>
 
-		<form method="post" action="?/resetPassword" use:enhance>
+		<form
+			method="post"
+			action="?/resetPassword"
+			use:enhance={() => {
+				loading.startKey('reset-password');
+				return async ({ update }) => {
+					await update();
+					loading.stopKey('reset-password');
+				};
+			}}
+		>
 			<input type="hidden" name="token" value={data.token} />
 			<label>
 				New password
@@ -24,7 +36,17 @@
 				Confirm new password
 				<input type="password" name="passwordConfirm" required minlength="8" />
 			</label>
-			<button class="btn btn-primary" type="submit">Reset password</button>
+			<button
+				class="btn btn-primary"
+				type="submit"
+				disabled={loading.isPending('reset-password')}
+			>
+				{#if loading.isPending('reset-password')}
+					<Spinner />
+				{:else}
+					Reset password
+				{/if}
+			</button>
 		</form>
 
 		{#if form?.message}

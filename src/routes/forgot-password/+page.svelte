@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
@@ -17,12 +19,32 @@
 			Enter your email address and we'll send you a link to reset your password.
 		</p>
 
-		<form method="post" action="?/requestReset" use:enhance>
+		<form
+			method="post"
+			action="?/requestReset"
+			use:enhance={() => {
+				loading.startKey('reset-request');
+				return async ({ update }) => {
+					await update();
+					loading.stopKey('reset-request');
+				};
+			}}
+		>
 			<label>
 				Email
 				<input type="email" name="email" required />
 			</label>
-			<button class="btn btn-primary" type="submit">Send reset link</button>
+			<button
+				class="btn btn-primary"
+				type="submit"
+				disabled={loading.isPending('reset-request')}
+			>
+				{#if loading.isPending('reset-request')}
+					<Spinner />
+				{:else}
+					Send reset link
+				{/if}
+			</button>
 		</form>
 
 		{#if form?.message}

@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { enhance } from '$app/forms';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from './Spinner.svelte';
 	import type { User } from 'better-auth';
 
 	interface Props {
@@ -19,8 +22,28 @@
 	<div class="nav-right">
 		{#if user}
 			<a href={resolve('/profile')} class="nav-link">{user.name ?? 'Username'}</a>
-			<form method="post" action={resolve('/?/signOut')}>
-				<button class="btn btn-secondary" type="submit">Sign out</button>
+			<form
+				method="post"
+				action={resolve('/?/signOut')}
+				use:enhance={() => {
+					loading.startKey('sign-out');
+					return async ({ update }) => {
+						await update();
+						loading.stopKey('sign-out');
+					};
+				}}
+			>
+				<button
+					class="btn btn-secondary"
+					type="submit"
+					disabled={loading.isPending('sign-out')}
+				>
+					{#if loading.isPending('sign-out')}
+						<Spinner />
+					{:else}
+						Sign out
+					{/if}
+				</button>
 			</form>
 		{:else}
 			<a href={resolve('/login')} class="btn btn-secondary">Login</a>

@@ -5,8 +5,11 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import Nav from '$lib/components/Nav.svelte';
+	import LoadingBar from '$lib/components/LoadingBar.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import { githubIcon } from '$lib/components/icons.svelte';
 	import type { LayoutProps } from './$types';
+	import { loading } from '$lib/loading.svelte';
 
 	let { children, data }: LayoutProps = $props();
 
@@ -24,7 +27,10 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+	<div>Loading: {loading.isLoading}</div>
+
 <div class="app-shell">
+	<LoadingBar />
 	{#if !isCanvas}
 		<Nav user={data.user} />
 	{/if}
@@ -78,7 +84,11 @@
 					type="submit"
 					disabled={isSending || feedbackType === 'success'}
 				>
-					{isSending ? 'Sending...' : 'Resend verification'}
+					{#if isSending}
+						<Spinner size={12} />
+					{:else}
+						Resend verification
+					{/if}
 				</button>
 			</form>
 			<button class="dismiss-btn" onclick={() => (bannerDismissed = true)} aria-label="Dismiss"

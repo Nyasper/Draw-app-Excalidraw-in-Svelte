@@ -2,6 +2,8 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { authClient } from '$lib/auth-client';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
@@ -15,7 +17,17 @@
 	<div class="auth-card">
 		<h1>Login</h1>
 
-		<form method="post" action="?/signInEmail" use:enhance>
+		<form
+			method="post"
+			action="?/signInEmail"
+			use:enhance={() => {
+				loading.startKey('sign-in');
+				return async ({ update }) => {
+					await update();
+					loading.stopKey('sign-in');
+				};
+			}}
+		>
 			<label>
 				Email
 				<input type="email" name="email" required />
@@ -25,7 +37,17 @@
 				<input type="password" name="password" required />
 			</label>
 			<a href={resolve('/forgot-password')} class="forgot-link">Forgot your password?</a>
-			<button class="btn btn-primary" type="submit">Sign in</button>
+			<button
+				class="btn btn-primary"
+				type="submit"
+				disabled={loading.isPending('sign-in')}
+			>
+				{#if loading.isPending('sign-in')}
+					<Spinner />
+				{:else}
+					Sign in
+				{/if}
+			</button>
 		</form>
 
 		{#if form?.message}
@@ -38,7 +60,12 @@
 
 		<button
 			class="btn btn-secondary"
-			onclick={() => authClient.signIn.social({ provider: 'github', callbackURL: '/' })}
+			disabled={loading.isPending('sign-in')}
+			onclick={() =>
+				loading.withPending('sign-in', () =>
+					authClient.signIn.social({ provider: 'github', callbackURL: '/' })
+				)
+			}
 		>
 			<svg class="github-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 				<path
@@ -48,7 +75,11 @@
 					fill="currentColor"
 				/>
 			</svg>
-			Sign in with GitHub
+			{#if loading.isPending('sign-in')}
+				<Spinner />
+			{:else}
+				Sign in with GitHub
+			{/if}
 		</button>
 
 		<p class="switch">

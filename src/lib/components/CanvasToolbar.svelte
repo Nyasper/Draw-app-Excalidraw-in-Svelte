@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from './Spinner.svelte';
 	import type { SaveStatus } from '$lib/canvas-save.svelte';
 
 	interface Props {
@@ -36,9 +38,25 @@
 		<input class="title-input" type="text" bind:value={title} placeholder="Untitled" />
 		<div class="save-area">
 			{@render saveStatusText()}
-			<button class="btn btn-primary" onclick={onSave}>Save</button>
+			<button class="btn btn-primary" disabled={loading.isPending('save')} onclick={onSave}>
+				{#if loading.isPending('save')}
+					<Spinner />
+				{:else}
+					Save
+				{/if}
+			</button>
 			{#if showDelete}
-				<button class="btn btn-danger" onclick={onDelete}>Delete</button>
+				<button
+					class="btn btn-danger"
+					disabled={loading.isPending('delete')}
+					onclick={onDelete}
+				>
+					{#if loading.isPending('delete')}
+						<Spinner />
+					{:else}
+						Delete
+					{/if}
+				</button>
 			{/if}
 		</div>
 	{/if}

@@ -12,6 +12,7 @@
 		type Rect
 	} from '$lib/dashboard/geometry';
 	import * as api from '$lib/dashboard/actions';
+	import { loading } from '$lib/loading.svelte';
 	import DashboardHeader from './dashboard/DashboardHeader.svelte';
 	import DashboardSidebar from './dashboard/DashboardSidebar.svelte';
 	import DrawingsView from './dashboard/DrawingsView.svelte';
@@ -87,7 +88,7 @@
 
 	async function refresh() {
 		try {
-			await invalidateAll();
+			await loading.withLoading(() => invalidateAll());
 		} catch {
 			// navigation was destroyed mid-flight; the next load will reflect the changes
 		}
@@ -106,8 +107,8 @@
 		if (!title) return;
 		const body: api.NewDrawingInput = { title };
 		if (selectedFolderId != null) body.folderId = selectedFolderId;
-		api
-			.createDrawing(body)
+		loading
+			.withPending('new-drawing', () => api.createDrawing(body))
 			.then(({ id }) => goto(resolve(`/draw/${id}`)))
 			.catch(() => {});
 	}
@@ -115,8 +116,8 @@
 	function newFolder() {
 		const name = prompt('Folder name:');
 		if (!name) return;
-		api
-			.createFolder(name)
+		loading
+			.withPending('folder-new', () => api.createFolder(name))
 			.then(refresh)
 			.catch(() => {});
 	}
@@ -124,8 +125,8 @@
 	function deleteDrawing(id: number, title?: string) {
 		const label = drawings.find((d) => d.id === id)?.title ?? title?.trim() ?? 'Untitled';
 		if (!confirm(`Delete "${label}"?`)) return;
-		api
-			.deleteDrawing(id)
+		loading
+			.withPending(`drawing:${id}`, () => api.deleteDrawing(id))
 			.then(refresh)
 			.catch(() => {});
 	}
@@ -140,23 +141,23 @@
 		if (!confirm(msg)) return;
 		const ids = [...selectedIds];
 		clearSelection();
-		api
-			.deleteDrawings(ids)
+		loading
+			.withPending('drawings-bulk', () => api.deleteDrawings(ids))
 			.then(refresh)
 			.catch(() => {});
 	}
 
 	function moveDrawing(id: number, folderId: number | null) {
-		api
-			.moveDrawing(id, folderId)
+		loading
+			.withPending(`drawing:${id}`, () => api.moveDrawing(id, folderId))
 			.then(refresh)
 			.catch(() => {});
 	}
 
 	function moveSelected(folderId: number | null) {
 		if (selectedIds.size === 0) return;
-		api
-			.moveDrawings([...selectedIds], folderId)
+		loading
+			.withPending('drawings-bulk', () => api.moveDrawings([...selectedIds], folderId))
 			.then(refresh)
 			.catch(() => {});
 	}
@@ -164,8 +165,8 @@
 	function renameDrawing(id: number, currentTitle: string) {
 		const newTitle = prompt('Rename drawing:', currentTitle);
 		if (newTitle && newTitle !== currentTitle) {
-			api
-				.renameDrawing(id, newTitle)
+			loading
+				.withPending(`drawing:${id}`, () => api.renameDrawing(id, newTitle))
 				.then(refresh)
 				.catch(() => {});
 		}
@@ -174,8 +175,8 @@
 	function renameFolder(id: number, currentName: string) {
 		const newName = prompt('Rename folder:', currentName);
 		if (newName && newName !== currentName) {
-			api
-				.renameFolder(id, newName)
+			loading
+				.withPending(`folder:${id}`, () => api.renameFolder(id, newName))
 				.then(refresh)
 				.catch(() => {});
 		}
@@ -198,14 +199,15 @@
 			await api.deleteFolder(id);
 		};
 
-		remove()
+		loading
+			.withPending(`folder:${id}`, remove)
 			.then(() => (id === selectedFolderId ? goto(resolve('/')) : refresh()))
 			.catch(() => {});
 	}
 
 	function createFolderAndMove(name: string, drawingIds: number[]) {
-		api
-			.createFolderAndMoveDrawings(name, drawingIds)
+		loading
+			.withPending('folder-new', () => api.createFolderAndMoveDrawings(name, drawingIds))
 			.then(refresh)
 			.catch(() => {});
 	}

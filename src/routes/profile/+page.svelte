@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { loading } from '$lib/loading.svelte';
+	import Spinner from '$lib/components/Spinner.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -52,7 +54,15 @@
 			method="post"
 			action="?/changePassword"
 			use:enhance={({ cancel }) => {
-				if (!confirm('Are you sure you want to change your password?')) cancel();
+				if (!confirm('Are you sure you want to change your password?')) {
+					cancel();
+					return;
+				}
+				loading.startKey('change-password');
+				return async ({ update }) => {
+					await update();
+					loading.stopKey('change-password');
+				};
 			}}
 		>
 			<label>
@@ -67,7 +77,17 @@
 				Confirm new password
 				<input type="password" name="confirmPassword" required minlength="8" />
 			</label>
-			<button class="btn btn-primary" type="submit">Change password</button>
+			<button
+				class="btn btn-primary"
+				type="submit"
+				disabled={loading.isPending('change-password')}
+			>
+				{#if loading.isPending('change-password')}
+					<Spinner />
+				{:else}
+					Change password
+				{/if}
+			</button>
 		</form>
 
 		{#if form?.message}
