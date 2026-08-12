@@ -9,7 +9,6 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import { githubIcon } from '$lib/components/icons.svelte';
 	import type { LayoutProps } from './$types';
-	import { loading } from '$lib/loading.svelte';
 
 	let { children, data }: LayoutProps = $props();
 
@@ -26,8 +25,6 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
-
-	<div>Loading: {loading.isLoading}</div>
 
 <div class="app-shell">
 	<LoadingBar />
