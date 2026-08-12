@@ -257,8 +257,7 @@
 	function onAreaPointerDown(e: PointerEvent) {
 		const target = e.target as HTMLElement;
 		if (target.closest('a') || target.closest('input')) return;
-		const isDrawingEl = target.closest('[data-drawing-id]');
-		if (!isDrawingEl && target.closest('button')) return;
+		if (target.closest('button')) return;
 		if (!areaEl) return;
 
 		e.preventDefault();
